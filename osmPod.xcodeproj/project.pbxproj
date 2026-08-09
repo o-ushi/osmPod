@@ -1,0 +1,816 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		4A33423B2FA4E8C00084D1A5 /* ParsedFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A33423A2FA4E8C00084D1A5 /* ParsedFeed.swift */; };
+		4A33423D2FA4E8EA0084D1A5 /* FeedParserService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A33423C2FA4E8EA0084D1A5 /* FeedParserService.swift */; };
+		4A33423F2FA617C80084D1A5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4A33423E2FA617C80084D1A5 /* Assets.xcassets */; };
+		A10000010000000000000001 /* osmPodApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000001 /* osmPodApp.swift */; };
+		A10000010000000000000002 /* Show.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000002 /* Show.swift */; };
+		A10000010000000000000003 /* Episode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000003 /* Episode.swift */; };
+		A10000010000000000000004 /* Group.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000004 /* Group.swift */; };
+		A10000010000000000000005 /* ModelSorting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000005 /* ModelSorting.swift */; };
+		A10000010000000000000006 /* FeedRegistrationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000006 /* FeedRegistrationService.swift */; };
+		A10000010000000000000007 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000007 /* MainView.swift */; };
+		A10000010000000000000008 /* GroupSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000008 /* GroupSectionView.swift */; };
+		A10000010000000000000009 /* ShowRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000009 /* ShowRowView.swift */; };
+		A1000001000000000000000A /* EpisodeRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000A /* EpisodeRowView.swift */; };
+		A1000001000000000000000B /* AddShowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000B /* AddShowView.swift */; };
+		A1000001000000000000000C /* GroupSelectionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000C /* GroupSelectionRow.swift */; };
+		A1000001000000000000000D /* EpisodeSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000E /* EpisodeSearchView.swift */; };
+		A1000001000000000000000E /* EpisodeSearchRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000000F /* EpisodeSearchRowView.swift */; };
+		A1000001000000000000000F /* AddEpisodeToGroupSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000010 /* AddEpisodeToGroupSheet.swift */; };
+		A10000010000000000000010 /* AudioPlayerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000011 /* AudioPlayerService.swift */; };
+		A10000010000000000000011 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000012 /* PlayerView.swift */; };
+		A10000010000000000000012 /* FolderEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000013 /* FolderEditView.swift */; };
+		A10000010000000000000013 /* PodcastSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000014 /* PodcastSearchView.swift */; };
+		A10000010000000000000014 /* ShowTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000015 /* ShowTransfer.swift */; };
+		A10000010000000000000015 /* ShowEpisodePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000016 /* ShowEpisodePickerView.swift */; };
+		A10000010000000000000016 /* FolderDropBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000017 /* FolderDropBar.swift */; };
+		A10000010000000000000017 /* NewEpisodeIndicatorSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000019 /* NewEpisodeIndicatorSnapshot.swift */; };
+		A10000010000000000000018 /* PodcastDiscoveryAIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000001000000000000001A /* PodcastDiscoveryAIView.swift */; };
+		A90000020000000000000001 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A90000010000000000000001 /* AppSettings.swift */; };
+		A90000020000000000000002 /* LibraryExportModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A90000010000000000000002 /* LibraryExportModels.swift */; };
+		A90000020000000000000003 /* LibraryImportExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A90000010000000000000003 /* LibraryImportExportService.swift */; };
+		A90000020000000000000004 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A90000010000000000000004 /* SettingsView.swift */; };
+		A90000020000000000000005 /* DataManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A90000010000000000000005 /* DataManagementView.swift */; };
+		A90000020000000000000006 /* ShakeDetectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A90000010000000000000006 /* ShakeDetectView.swift */; };
+		A90000020000000000000007 /* ThumbnailArtworkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A90000010000000000000007 /* ThumbnailArtworkView.swift */; };
+		A90000020000000000000008 /* EpisodeDownloadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A90000010000000000000008 /* EpisodeDownloadService.swift */; };
+		A9000002000000000000000A /* FavoriteFolderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9000001000000000000000A /* FavoriteFolderService.swift */; };
+		B10000020000000000000001 /* LibrarySortMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000001 /* LibrarySortMenu.swift */; };
+		B367709D793DB3DC695D4717 /* DebugLogExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8B01746DAA576F90FEBC35A /* DebugLogExporter.swift */; };
+		C10000020000000000000001 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000010000000000000001 /* AppLanguage.swift */; };
+		C10000020000000000000002 /* LanguageSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000010000000000000002 /* LanguageSettings.swift */; };
+		C10000020000000000000003 /* LocalizedStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000010000000000000003 /* LocalizedStrings.swift */; };
+		C10000020000000000000004 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000010000000000000004 /* HapticManager.swift */; };
+		C10000020000000000000008 /* AppPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000010000000000000008 /* AppPalette.swift */; };
+		CF000002 /* CloudFilePreparationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF000001 /* CloudFilePreparationState.swift */; };
+		CF000004 /* CloudFilePreparationOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF000003 /* CloudFilePreparationOverlay.swift */; };
+		CS00000B /* CloudSyncSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CS00000A /* CloudSyncSettingsView.swift */; };
+		D10000020000000000000001 /* ThumbnailImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = D10000010000000000000001 /* ThumbnailImageCache.swift */; };
+		E10000020000000000000001 /* ITunesPodcastSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000010000000000000001 /* ITunesPodcastSearchService.swift */; };
+		E10000020000000000000002 /* PodcastShowRegistration.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000010000000000000002 /* PodcastShowRegistration.swift */; };
+		E10000020000000000000003 /* RSSURLExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000010000000000000003 /* RSSURLExtractor.swift */; };
+		E10000020000000000000004 /* PodcastShowPreviewSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000010000000000000004 /* PodcastShowPreviewSheet.swift */; };
+		E10000020000000000000005 /* CollapsibleFolderPickerRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000010000000000000005 /* CollapsibleFolderPickerRows.swift */; };
+		E10000020000000000000006 /* RSSURLExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000010000000000000003 /* RSSURLExtractor.swift */; };
+		F10000020000000000000001 /* FolderReorderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10000010000000000000001 /* FolderReorderService.swift */; };
+		H10000020000000000000001 /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = H10000010000000000000001 /* HelpView.swift */; };
+		IC000002 /* ICloudSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = IC000001 /* ICloudSyncManager.swift */; };
+		LF000002 /* LocalFileImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = LF000001 /* LocalFileImportService.swift */; };
+		LF000004 /* LocalFolderBookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = LF000003 /* LocalFolderBookmarkStore.swift */; };
+		LF000006 /* BookmarkedFilePlaybackPreparer.swift in Sources */ = {isa = PBXBuildFile; fileRef = LF000005 /* BookmarkedFilePlaybackPreparer.swift */; };
+		NP000002 /* NowPlayingSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = NP000001 /* NowPlayingSyncCoordinator.swift */; };
+		P10000020000000000000001 /* PlanStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = P10000010000000000000001 /* PlanStore.swift */; };
+		P10000020000000000000002 /* PlanManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = P10000010000000000000002 /* PlanManagementView.swift */; };
+		Q10000020000000000000001 /* SampleShowsSeedService.swift in Sources */ = {isa = PBXBuildFile; fileRef = Q10000010000000000000001 /* SampleShowsSeedService.swift */; };
+		S10000020000000000000001 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = S10000010000000000000001 /* ShareViewController.swift */; };
+		S10000020000000000000002 /* ShareImportStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = S10000010000000000000006 /* ShareImportStorage.swift */; };
+		S10000020000000000000003 /* ShareImportStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = S10000010000000000000006 /* ShareImportStorage.swift */; };
+		S10000020000000000000009 /* osmPodShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = S10000010000000000000003 /* osmPodShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		S10000020000000000000010 /* RelatedShowsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = S10000010000000000000007 /* RelatedShowsService.swift */; };
+		S10000020000000000000011 /* ShareImportCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = S10000010000000000000008 /* ShareImportCoordinator.swift */; };
+		S10000020000000000000012 /* ShareImportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = S10000010000000000000009 /* ShareImportSheet.swift */; };
+		TD0000020000000000000001 /* ThirdPartyDataConsent.swift in Sources */ = {isa = PBXBuildFile; fileRef = TD0000010000000000000001 /* ThirdPartyDataConsent.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		S60000010000000000000002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A60000010000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = S50000010000000000000002;
+			remoteInfo = osmPodShare;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		S30000010000000000000006 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				S10000020000000000000009 /* osmPodShare.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		4A33423A2FA4E8C00084D1A5 /* ParsedFeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParsedFeed.swift; sourceTree = "<group>"; };
+		4A33423C2FA4E8EA0084D1A5 /* FeedParserService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedParserService.swift; sourceTree = "<group>"; };
+		4A33423E2FA617C80084D1A5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A20000010000000000000001 /* osmPodApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = osmPodApp.swift; sourceTree = "<group>"; };
+		A20000010000000000000002 /* Show.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Show.swift; sourceTree = "<group>"; };
+		A20000010000000000000003 /* Episode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Episode.swift; sourceTree = "<group>"; };
+		A20000010000000000000004 /* Group.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Group.swift; sourceTree = "<group>"; };
+		A20000010000000000000005 /* ModelSorting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSorting.swift; sourceTree = "<group>"; };
+		A20000010000000000000006 /* FeedRegistrationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedRegistrationService.swift; sourceTree = "<group>"; };
+		A20000010000000000000007 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
+		A20000010000000000000008 /* GroupSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupSectionView.swift; sourceTree = "<group>"; };
+		A20000010000000000000009 /* ShowRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowRowView.swift; sourceTree = "<group>"; };
+		A2000001000000000000000A /* EpisodeRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeRowView.swift; sourceTree = "<group>"; };
+		A2000001000000000000000B /* AddShowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddShowView.swift; sourceTree = "<group>"; };
+		A2000001000000000000000C /* GroupSelectionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupSelectionRow.swift; sourceTree = "<group>"; };
+		A2000001000000000000000D /* osmPod.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = osmPod.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A2000001000000000000000E /* EpisodeSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeSearchView.swift; sourceTree = "<group>"; };
+		A2000001000000000000000F /* EpisodeSearchRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeSearchRowView.swift; sourceTree = "<group>"; };
+		A20000010000000000000010 /* AddEpisodeToGroupSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEpisodeToGroupSheet.swift; sourceTree = "<group>"; };
+		A20000010000000000000011 /* AudioPlayerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerService.swift; sourceTree = "<group>"; };
+		A20000010000000000000012 /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
+		A20000010000000000000013 /* FolderEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderEditView.swift; sourceTree = "<group>"; };
+		A20000010000000000000014 /* PodcastSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodcastSearchView.swift; sourceTree = "<group>"; };
+		A20000010000000000000015 /* ShowTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowTransfer.swift; sourceTree = "<group>"; };
+		A20000010000000000000016 /* ShowEpisodePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowEpisodePickerView.swift; sourceTree = "<group>"; };
+		A20000010000000000000017 /* FolderDropBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderDropBar.swift; sourceTree = "<group>"; };
+		A20000010000000000000018 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A20000010000000000000019 /* NewEpisodeIndicatorSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewEpisodeIndicatorSnapshot.swift; sourceTree = "<group>"; };
+		A2000001000000000000001A /* PodcastDiscoveryAIView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodcastDiscoveryAIView.swift; sourceTree = "<group>"; };
+		A90000010000000000000001 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		A90000010000000000000002 /* LibraryExportModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryExportModels.swift; sourceTree = "<group>"; };
+		A90000010000000000000003 /* LibraryImportExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryImportExportService.swift; sourceTree = "<group>"; };
+		A90000010000000000000004 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A90000010000000000000005 /* DataManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManagementView.swift; sourceTree = "<group>"; };
+		A90000010000000000000006 /* ShakeDetectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShakeDetectView.swift; sourceTree = "<group>"; };
+		A90000010000000000000007 /* ThumbnailArtworkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailArtworkView.swift; sourceTree = "<group>"; };
+		A90000010000000000000008 /* EpisodeDownloadService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeDownloadService.swift; sourceTree = "<group>"; };
+		A9000001000000000000000A /* FavoriteFolderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteFolderService.swift; sourceTree = "<group>"; };
+		B10000010000000000000001 /* LibrarySortMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySortMenu.swift; sourceTree = "<group>"; };
+		C10000010000000000000001 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
+		C10000010000000000000002 /* LanguageSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageSettings.swift; sourceTree = "<group>"; };
+		C10000010000000000000003 /* LocalizedStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizedStrings.swift; sourceTree = "<group>"; };
+		C10000010000000000000004 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
+		C10000010000000000000008 /* AppPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPalette.swift; sourceTree = "<group>"; };
+		CF000001 /* CloudFilePreparationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudFilePreparationState.swift; sourceTree = "<group>"; };
+		CF000003 /* CloudFilePreparationOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudFilePreparationOverlay.swift; sourceTree = "<group>"; };
+		CS00000A /* CloudSyncSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncSettingsView.swift; sourceTree = "<group>"; };
+		D10000010000000000000001 /* ThumbnailImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailImageCache.swift; sourceTree = "<group>"; };
+		D8B01746DAA576F90FEBC35A /* DebugLogExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogExporter.swift; sourceTree = "<group>"; };
+		E10000010000000000000001 /* ITunesPodcastSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ITunesPodcastSearchService.swift; sourceTree = "<group>"; };
+		E10000010000000000000002 /* PodcastShowRegistration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodcastShowRegistration.swift; sourceTree = "<group>"; };
+		E10000010000000000000003 /* RSSURLExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSSURLExtractor.swift; sourceTree = "<group>"; };
+		E10000010000000000000004 /* PodcastShowPreviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodcastShowPreviewSheet.swift; sourceTree = "<group>"; };
+		E10000010000000000000005 /* CollapsibleFolderPickerRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollapsibleFolderPickerRows.swift; sourceTree = "<group>"; };
+		F10000010000000000000001 /* FolderReorderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderReorderService.swift; sourceTree = "<group>"; };
+		H10000010000000000000001 /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
+		IC000001 /* ICloudSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICloudSyncManager.swift; sourceTree = "<group>"; };
+		LF000001 /* LocalFileImportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalFileImportService.swift; sourceTree = "<group>"; };
+		LF000003 /* LocalFolderBookmarkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalFolderBookmarkStore.swift; sourceTree = "<group>"; };
+		LF000005 /* BookmarkedFilePlaybackPreparer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkedFilePlaybackPreparer.swift; sourceTree = "<group>"; };
+		NP000001 /* NowPlayingSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingSyncCoordinator.swift; sourceTree = "<group>"; };
+		P10000010000000000000001 /* PlanStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanStore.swift; sourceTree = "<group>"; };
+		P10000010000000000000002 /* PlanManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanManagementView.swift; sourceTree = "<group>"; };
+		Q10000010000000000000001 /* SampleShowsSeedService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleShowsSeedService.swift; sourceTree = "<group>"; };
+		S10000010000000000000001 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		S10000010000000000000002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		S10000010000000000000003 /* osmPodShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = osmPodShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		S10000010000000000000006 /* ShareImportStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareImportStorage.swift; sourceTree = "<group>"; };
+		S10000010000000000000007 /* RelatedShowsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelatedShowsService.swift; sourceTree = "<group>"; };
+		S10000010000000000000008 /* ShareImportCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareImportCoordinator.swift; sourceTree = "<group>"; };
+		S10000010000000000000009 /* ShareImportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareImportSheet.swift; sourceTree = "<group>"; };
+		TD0000010000000000000001 /* ThirdPartyDataConsent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThirdPartyDataConsent.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A30000010000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		S30000010000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A40000010000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				A40000010000000000000002 /* osmPod */,
+				S4000001000000000000000B /* osmPodShare */,
+				A40000010000000000000007 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A40000010000000000000002 /* osmPod */ = {
+			isa = PBXGroup;
+			children = (
+				A40000010000000000000003 /* App */,
+				S4000001000000000000000C /* Shared */,
+				A40000010000000000000004 /* Models */,
+				A40000010000000000000005 /* Services */,
+				A40000010000000000000006 /* Views */,
+				4A33423E2FA617C80084D1A5 /* Assets.xcassets */,
+				A20000010000000000000018 /* Info.plist */,
+			);
+			name = osmPod;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000003 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000001 /* osmPodApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000004 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000002 /* Show.swift */,
+				A20000010000000000000003 /* Episode.swift */,
+				4A33423A2FA4E8C00084D1A5 /* ParsedFeed.swift */,
+				A20000010000000000000004 /* Group.swift */,
+				A20000010000000000000005 /* ModelSorting.swift */,
+				A20000010000000000000019 /* NewEpisodeIndicatorSnapshot.swift */,
+				A20000010000000000000015 /* ShowTransfer.swift */,
+				A90000010000000000000002 /* LibraryExportModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000005 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000006 /* FeedRegistrationService.swift */,
+				4A33423C2FA4E8EA0084D1A5 /* FeedParserService.swift */,
+				A20000010000000000000011 /* AudioPlayerService.swift */,
+				A90000010000000000000008 /* EpisodeDownloadService.swift */,
+				A9000001000000000000000A /* FavoriteFolderService.swift */,
+				F10000010000000000000001 /* FolderReorderService.swift */,
+				A90000010000000000000001 /* AppSettings.swift */,
+				D8B01746DAA576F90FEBC35A /* DebugLogExporter.swift */,
+				A90000010000000000000003 /* LibraryImportExportService.swift */,
+				P10000010000000000000001 /* PlanStore.swift */,
+				Q10000010000000000000001 /* SampleShowsSeedService.swift */,
+				C10000010000000000000001 /* AppLanguage.swift */,
+				C10000010000000000000002 /* LanguageSettings.swift */,
+				C10000010000000000000003 /* LocalizedStrings.swift */,
+				C10000010000000000000004 /* HapticManager.swift */,
+				C10000010000000000000008 /* AppPalette.swift */,
+				D10000010000000000000001 /* ThumbnailImageCache.swift */,
+				E10000010000000000000001 /* ITunesPodcastSearchService.swift */,
+				TD0000010000000000000001 /* ThirdPartyDataConsent.swift */,
+				E10000010000000000000002 /* PodcastShowRegistration.swift */,
+				E10000010000000000000003 /* RSSURLExtractor.swift */,
+				S10000010000000000000007 /* RelatedShowsService.swift */,
+				S10000010000000000000008 /* ShareImportCoordinator.swift */,
+				IC000001 /* ICloudSyncManager.swift */,
+				NP000001 /* NowPlayingSyncCoordinator.swift */,
+				LF000001 /* LocalFileImportService.swift */,
+				LF000003 /* LocalFolderBookmarkStore.swift */,
+				LF000005 /* BookmarkedFilePlaybackPreparer.swift */,
+				CF000001 /* CloudFilePreparationState.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000006 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A40000010000000000000008 /* Main */,
+				A40000010000000000000009 /* AddShow */,
+				A4000001000000000000000A /* EpisodeSearch */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000007 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A2000001000000000000000D /* osmPod.app */,
+				S10000010000000000000003 /* osmPodShare.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000008 /* Main */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000007 /* MainView.swift */,
+				H10000010000000000000001 /* HelpView.swift */,
+				P10000010000000000000002 /* PlanManagementView.swift */,
+				B10000010000000000000001 /* LibrarySortMenu.swift */,
+				A20000010000000000000008 /* GroupSectionView.swift */,
+				A20000010000000000000009 /* ShowRowView.swift */,
+				A2000001000000000000000A /* EpisodeRowView.swift */,
+				A20000010000000000000012 /* PlayerView.swift */,
+				A20000010000000000000013 /* FolderEditView.swift */,
+				A20000010000000000000017 /* FolderDropBar.swift */,
+				A90000010000000000000004 /* SettingsView.swift */,
+				A90000010000000000000005 /* DataManagementView.swift */,
+				A90000010000000000000006 /* ShakeDetectView.swift */,
+				A90000010000000000000007 /* ThumbnailArtworkView.swift */,
+				CS00000A /* CloudSyncSettingsView.swift */,
+				CF000003 /* CloudFilePreparationOverlay.swift */,
+			);
+			path = Main;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000009 /* AddShow */ = {
+			isa = PBXGroup;
+			children = (
+				A2000001000000000000000B /* AddShowView.swift */,
+				A2000001000000000000000C /* GroupSelectionRow.swift */,
+				A20000010000000000000014 /* PodcastSearchView.swift */,
+				A2000001000000000000001A /* PodcastDiscoveryAIView.swift */,
+				E10000010000000000000004 /* PodcastShowPreviewSheet.swift */,
+				E10000010000000000000005 /* CollapsibleFolderPickerRows.swift */,
+				S10000010000000000000009 /* ShareImportSheet.swift */,
+			);
+			path = AddShow;
+			sourceTree = "<group>";
+		};
+		A4000001000000000000000A /* EpisodeSearch */ = {
+			isa = PBXGroup;
+			children = (
+				A2000001000000000000000E /* EpisodeSearchView.swift */,
+				A2000001000000000000000F /* EpisodeSearchRowView.swift */,
+				A20000010000000000000010 /* AddEpisodeToGroupSheet.swift */,
+				A20000010000000000000016 /* ShowEpisodePickerView.swift */,
+			);
+			path = EpisodeSearch;
+			sourceTree = "<group>";
+		};
+		S4000001000000000000000B /* osmPodShare */ = {
+			isa = PBXGroup;
+			children = (
+				S10000010000000000000001 /* ShareViewController.swift */,
+				S10000010000000000000002 /* Info.plist */,
+			);
+			path = osmPodShare;
+			sourceTree = "<group>";
+		};
+		S4000001000000000000000C /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				S10000010000000000000006 /* ShareImportStorage.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A50000010000000000000001 /* osmPod */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A70000010000000000000002 /* Build configuration list for PBXNativeTarget "osmPod" */;
+			buildPhases = (
+				A30000010000000000000002 /* Sources */,
+				A30000010000000000000001 /* Frameworks */,
+				S30000010000000000000006 /* Embed Foundation Extensions */,
+				V10000010000000000000001 /* Sync Extension Bundle Version */,
+				A30000010000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				S60000010000000000000003 /* PBXTargetDependency */,
+			);
+			name = osmPod;
+			productName = osmPod;
+			productReference = A2000001000000000000000D /* osmPod.app */;
+			productType = "com.apple.product-type.application";
+		};
+		S50000010000000000000002 /* osmPodShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = S70000010000000000000003 /* Build configuration list for PBXNativeTarget "osmPodShare" */;
+			buildPhases = (
+				S30000010000000000000004 /* Sources */,
+				S30000010000000000000005 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = osmPodShare;
+			productName = osmPodShare;
+			productReference = S10000010000000000000003 /* osmPodShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A60000010000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 2650;
+				SystemCapabilities = {
+					com.apple.iCloud = {
+						enabled = 1;
+					};
+				};
+				TargetAttributes = {
+					A50000010000000000000001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					S50000010000000000000002 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = A70000010000000000000001 /* Build configuration list for PBXProject "osmPod" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A40000010000000000000001;
+			productRefGroup = A40000010000000000000007 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A50000010000000000000001 /* osmPod */,
+				S50000010000000000000002 /* osmPodShare */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A30000010000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4A33423F2FA617C80084D1A5 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		V10000010000000000000001 /* Sync Extension Bundle Version */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Sync Extension Bundle Version";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+			shellPath = /bin/sh;
+			shellScript = "APPEX_PLIST=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}/PlugIns/osmPodShare.appex/Info.plist\"\nif [ ! -f \"$APPEX_PLIST\" ]; then exit 0; fi\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion ${CURRENT_PROJECT_VERSION}\" \"$APPEX_PLIST\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString ${MARKETING_VERSION}\" \"$APPEX_PLIST\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A30000010000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000010000000000000001 /* osmPodApp.swift in Sources */,
+				A10000010000000000000002 /* Show.swift in Sources */,
+				A10000010000000000000003 /* Episode.swift in Sources */,
+				A10000010000000000000004 /* Group.swift in Sources */,
+				4A33423B2FA4E8C00084D1A5 /* ParsedFeed.swift in Sources */,
+				A10000010000000000000005 /* ModelSorting.swift in Sources */,
+				A10000010000000000000017 /* NewEpisodeIndicatorSnapshot.swift in Sources */,
+				A10000010000000000000006 /* FeedRegistrationService.swift in Sources */,
+				A10000010000000000000007 /* MainView.swift in Sources */,
+				H10000020000000000000001 /* HelpView.swift in Sources */,
+				B10000020000000000000001 /* LibrarySortMenu.swift in Sources */,
+				4A33423D2FA4E8EA0084D1A5 /* FeedParserService.swift in Sources */,
+				A10000010000000000000008 /* GroupSectionView.swift in Sources */,
+				A10000010000000000000009 /* ShowRowView.swift in Sources */,
+				A1000001000000000000000A /* EpisodeRowView.swift in Sources */,
+				A1000001000000000000000B /* AddShowView.swift in Sources */,
+				A1000001000000000000000C /* GroupSelectionRow.swift in Sources */,
+				A1000001000000000000000D /* EpisodeSearchView.swift in Sources */,
+				A1000001000000000000000E /* EpisodeSearchRowView.swift in Sources */,
+				A1000001000000000000000F /* AddEpisodeToGroupSheet.swift in Sources */,
+				A10000010000000000000010 /* AudioPlayerService.swift in Sources */,
+				A10000010000000000000011 /* PlayerView.swift in Sources */,
+				A10000010000000000000012 /* FolderEditView.swift in Sources */,
+				A10000010000000000000013 /* PodcastSearchView.swift in Sources */,
+				A10000010000000000000014 /* ShowTransfer.swift in Sources */,
+				A10000010000000000000015 /* ShowEpisodePickerView.swift in Sources */,
+				A10000010000000000000016 /* FolderDropBar.swift in Sources */,
+				A10000010000000000000018 /* PodcastDiscoveryAIView.swift in Sources */,
+				A90000020000000000000001 /* AppSettings.swift in Sources */,
+				B367709D793DB3DC695D4717 /* DebugLogExporter.swift in Sources */,
+				C10000020000000000000001 /* AppLanguage.swift in Sources */,
+				C10000020000000000000002 /* LanguageSettings.swift in Sources */,
+				C10000020000000000000003 /* LocalizedStrings.swift in Sources */,
+				C10000020000000000000004 /* HapticManager.swift in Sources */,
+				C10000020000000000000008 /* AppPalette.swift in Sources */,
+				CS00000B /* CloudSyncSettingsView.swift in Sources */,
+				A90000020000000000000002 /* LibraryExportModels.swift in Sources */,
+				A90000020000000000000003 /* LibraryImportExportService.swift in Sources */,
+				P10000020000000000000001 /* PlanStore.swift in Sources */,
+				Q10000020000000000000001 /* SampleShowsSeedService.swift in Sources */,
+				P10000020000000000000002 /* PlanManagementView.swift in Sources */,
+				A90000020000000000000004 /* SettingsView.swift in Sources */,
+				A90000020000000000000005 /* DataManagementView.swift in Sources */,
+				A90000020000000000000006 /* ShakeDetectView.swift in Sources */,
+				A90000020000000000000007 /* ThumbnailArtworkView.swift in Sources */,
+				A90000020000000000000008 /* EpisodeDownloadService.swift in Sources */,
+				A9000002000000000000000A /* FavoriteFolderService.swift in Sources */,
+				F10000020000000000000001 /* FolderReorderService.swift in Sources */,
+				D10000020000000000000001 /* ThumbnailImageCache.swift in Sources */,
+				E10000020000000000000001 /* ITunesPodcastSearchService.swift in Sources */,
+				TD0000020000000000000001 /* ThirdPartyDataConsent.swift in Sources */,
+				E10000020000000000000002 /* PodcastShowRegistration.swift in Sources */,
+				E10000020000000000000003 /* RSSURLExtractor.swift in Sources */,
+				E10000020000000000000004 /* PodcastShowPreviewSheet.swift in Sources */,
+				E10000020000000000000005 /* CollapsibleFolderPickerRows.swift in Sources */,
+				S10000020000000000000003 /* ShareImportStorage.swift in Sources */,
+				S10000020000000000000010 /* RelatedShowsService.swift in Sources */,
+				S10000020000000000000011 /* ShareImportCoordinator.swift in Sources */,
+				S10000020000000000000012 /* ShareImportSheet.swift in Sources */,
+				IC000002 /* ICloudSyncManager.swift in Sources */,
+				NP000002 /* NowPlayingSyncCoordinator.swift in Sources */,
+				LF000002 /* LocalFileImportService.swift in Sources */,
+				LF000004 /* LocalFolderBookmarkStore.swift in Sources */,
+				LF000006 /* BookmarkedFilePlaybackPreparer.swift in Sources */,
+				CF000002 /* CloudFilePreparationState.swift in Sources */,
+				CF000004 /* CloudFilePreparationOverlay.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		S30000010000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				S10000020000000000000001 /* ShareViewController.swift in Sources */,
+				S10000020000000000000002 /* ShareImportStorage.swift in Sources */,
+				E10000020000000000000006 /* RSSURLExtractor.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		S60000010000000000000003 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = S50000010000000000000002 /* osmPodShare */;
+			targetProxy = S60000010000000000000002 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A80000010000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CURRENT_PROJECT_VERSION = 2;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = ELS6C2V4CR;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.30;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A80000010000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CURRENT_PROJECT_VERSION = 2;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = ELS6C2V4CR;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.30;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		A80000010000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_ENTITLEMENTS = osmPod.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = ELS6C2V4CR;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleIconName = AppIcon;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.75;
+				PRODUCT_BUNDLE_IDENTIFIER = com.osamushikubo.osmPod;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A80000010000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_ENTITLEMENTS = osmPod.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = ELS6C2V4CR;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleIconName = AppIcon;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.75;
+				PRODUCT_BUNDLE_IDENTIFIER = com.osamushikubo.osmPod;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		S80000010000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = ELS6C2V4CR;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = osmPodShare/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.75;
+				PRODUCT_BUNDLE_IDENTIFIER = com.osamushikubo.osmPod.ShareImport;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRIP_INSTALLED_PRODUCT = NO;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		S80000010000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = ELS6C2V4CR;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = osmPodShare/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.75;
+				PRODUCT_BUNDLE_IDENTIFIER = com.osamushikubo.osmPod.ShareImport;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A70000010000000000000001 /* Build configuration list for PBXProject "osmPod" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A80000010000000000000001 /* Debug */,
+				A80000010000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A70000010000000000000002 /* Build configuration list for PBXNativeTarget "osmPod" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A80000010000000000000003 /* Debug */,
+				A80000010000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		S70000010000000000000003 /* Build configuration list for PBXNativeTarget "osmPodShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				S80000010000000000000005 /* Debug */,
+				S80000010000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A60000010000000000000001 /* Project object */;
+}
