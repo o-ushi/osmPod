@@ -46,6 +46,10 @@ final class AudioPlayerService {
     @ObservationIgnored nonisolated(unsafe) private var timeControlObserver: NSKeyValueObservation?
     @ObservationIgnored nonisolated(unsafe) private var rateObserver: NSKeyValueObservation?
     @ObservationIgnored private var lastStalledReloadUptime: TimeInterval = 0
+    /// `.waitingToPlayAtSpecifiedRate` に張り付いたまま戻らない状態を検知するウォッチドッグ。
+    /// isPlaying=true のまま rate=1 を書き続けると実際には音が止まっているのに再生中扱いが続くため、
+    /// 一定時間 waiting が続いたら stall 扱いでリロードする。
+    @ObservationIgnored private var waitingStallWatchdogTask: Task<Void, Never>?
     /// AVPlayer.seek が完了するまでタイマーによる currentTime 上書きを抑制するフラグ。
     @ObservationIgnored private var isSeeking = false
     /// `play()` / `setActive` の連打はオーディオグラフの切り替えノイズになるため間引く。
@@ -54,6 +58,8 @@ final class AudioPlayerService {
     @ObservationIgnored private var modelContext: ModelContext?
     /// `setCategory` の繰り返しは SessionCore の「Failed to set properties」につながるため、一度だけ適用する。
     @ObservationIgnored private var didApplyPlaybackCategory = false
+    /// こちらが `setActive(true)` したままかどうか。停止のたびに `setActive(false)` を連打するとクリックノイズになる。
+    @ObservationIgnored private var playbackAudioSessionIsActive = false
     /// `willEnterForeground` と SwiftUI の `scenePhase` が短時間に二度続くのを抑止する。
     @ObservationIgnored private var lastForegroundRecoveryUptime: TimeInterval = 0
     /// バックグラウンド中は保存間隔を延長して SwiftData WAL 蓄積を抑制するためのフラグ。
@@ -63,6 +69,12 @@ final class AudioPlayerService {
     /// `NowPlayingSyncCoordinator` から参照するため internal。
     @ObservationIgnored var inMemoryPlaybackPosition: TimeInterval = 0
     @ObservationIgnored private var backgroundNowPlayingTask: Task<Void, Never>?
+    /// item.status=.failed やバッファリング詰まりでネットワーク復帰待ちの間、実際には音が
+    /// 止まっているのに isPlaying=true のままになる状態。isPlaying 自体は「ユーザーの再生意図」
+    /// として復帰ロジック（startNetworkRecoveryMonitor 等）にそのまま使うため変更せず、
+    /// NowPlayingInfo の rate/playbackState 補正だけに使う。
+    /// `NowPlayingSyncCoordinator` から参照するため internal。
+    @ObservationIgnored var isNetworkStalled = false
     /// 割り込み開始時点で再生していたか（手動停止後の誤った自動再開を防ぐ）。
     /// `NowPlayingSyncCoordinator` から参照するため internal。
     @ObservationIgnored nonisolated(unsafe) var wasPlayingAtInterruption = false
@@ -107,7 +119,8 @@ final class AudioPlayerService {
         configureAudioSessionCategory()
         setupSessionObservers()
         setupApplicationLifecycleObservers()
-        nowPlayingSync.setupRemoteCommandsIfNeeded()
+        // MPNowPlayingSession は AVPlayer が最低 1 つ無いと生成できないため、リモートコマンドの
+        // 登録は最初の AVPlayer ができたタイミング（nowPlayingSync.attachPlayer 内）まで遅延する。
     }
 
     /// アプリ起動直後にカテゴリだけ確定させる。`setActive` は実際の再生直前に呼ぶ。
@@ -287,7 +300,7 @@ final class AudioPlayerService {
             nowPlayingSync.logNowPlayingEvent("resumePlayback", trigger: trigger, extra: "phase=exit reloadedFailedItem=true")
             return
         }
-        player.play()
+        playCurrentItem()
         isPlaying = true
         lastChromeLiveTimePublishSecond = -1
         syncPlaybackChrome(liveTime: currentTime)
@@ -310,6 +323,7 @@ final class AudioPlayerService {
         stopNetworkRecoveryMonitor()
         let pausedAt = player.currentTime().seconds
         isPlaying = false
+        isNetworkStalled = false
         wasPlayingAtInterruption = false  // 手動停止なので割り込み終了後の自動再開を抑制する
         player.pause()
         // failed item は player.currentTime() が 0 などの不正値を返すため更新しない。
@@ -336,16 +350,11 @@ final class AudioPlayerService {
             saveTask = nil
         }
         let elapsed = (pausedAt.isFinite && pausedAt >= 0) ? pausedAt : nil
-        nowPlayingSync.applyNowPlayingInfo(elapsed: elapsed)
-        nowPlayingSync.syncRemoteCommandsAvailability()
-        nowPlayingSync.scheduleNowPlayingReassert(elapsed: elapsed)
-        // フォアグラウンドでの手動停止: セッションを非アクティブにして
-        // AVPlayer の playbackState を .paused にリセットさせる。
-        // これをしないと AVPlayer の非同期更新が playbackState=.playing を後から書き、
-        // CC が entitlement なしで上書きできない状態になる。
-        if !isInBackground {
-            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        }
+        publishPausedNowPlaying(
+            elapsed: elapsed,
+            notifyOthersOnDeactivation: true,
+            releaseInBackground: true
+        )
         nowPlayingSync.logNowPlayingEvent("pausePlayback", trigger: trigger, extra: "phase=exit")
     }
 
@@ -459,7 +468,7 @@ final class AudioPlayerService {
 
             switch item.status {
             case .readyToPlay:
-                player?.play()
+                playCurrentItem()
                 isPlaying = true
                 lastChromeLiveTimePublishSecond = -1
                 syncPlaybackChrome(liveTime: currentTime)
@@ -537,6 +546,7 @@ final class AudioPlayerService {
         // ストリーミングはバッファ待ちを有効にして切れ欠けノイズを抑える。ローカルは即時再生。
         newPlayer.automaticallyWaitsToMinimizeStalling = !isLocalFile
         player = newPlayer
+        nowPlayingSync.attachPlayer(newPlayer)
 
         attachPeriodicTimeObserver(generation: generation)
         attachEndObserver(for: item)
@@ -555,12 +565,13 @@ final class AudioPlayerService {
 
         guard autoPlay else {
             isPlaying = false
+            player?.defaultRate = 0
             syncPlaybackChrome()
             nowPlayingSync.syncRemoteCommandsAvailability()
             return
         }
 
-        player?.play()
+        playCurrentItem()
         isPlaying = true
         lastChromeLiveTimePublishSecond = -1
         syncPlaybackChrome(liveTime: currentTime)
@@ -605,7 +616,7 @@ final class AudioPlayerService {
         }
 
         bgLog.info("▶️ resume play() without session reconfigure")
-        player.play()
+        playCurrentItem()
         if isInBackground {
             startBackgroundPositionTracking()
         } else {
@@ -718,6 +729,10 @@ final class AudioPlayerService {
                     capturedAt = self.isInBackground ? self.inMemoryPlaybackPosition : self.currentTime
                 }
                 bgLog.info("⚠️ item.status=.failed capturedAt=\(capturedAt)s pendingReload=\(self.pendingReloadResumeAt) isSeeking=\(self.isSeeking) currentTime=\(self.currentTime) → starting network recovery monitor")
+                // ネットワーク復帰待ちの間、実際には無音なのに isPlaying=true のまま NowPlayingInfo が
+                // rate=1 を書き続けないよう、ここで CC/LS/アプリ UI 向けの表示だけを補正する。
+                self.isNetworkStalled = true
+                self.nowPlayingSync.applyNowPlayingInfo()
                 self.startNetworkRecoveryMonitor(resumeAt: capturedAt)
             }
         }
@@ -789,6 +804,9 @@ final class AudioPlayerService {
                 switch status {
                 case .playing:
                     self.nowPlayingSync.logNowPlayingEvent("timeControl", trigger: "observer", extra: "status=playing")
+                    self.cancelWaitingStallWatchdog()
+                    // 実際に音が流れ始めたので、ネットワーク復帰待ち中に補正していた表示をもとに戻す。
+                    self.isNetworkStalled = false
                     if !self.isPlaying {
                         // isPlaying=false なのに AVPlayer が再生状態に遷移した（バッファ補充後の自動再開など）。
                         // 直ちに停止させないと iOS の自動 NowPlayingInfo 更新が rate=1 を書き続ける。
@@ -800,6 +818,7 @@ final class AudioPlayerService {
                     self.nowPlayingSync.applyNowPlayingInfo()
                 case .paused:
                     self.nowPlayingSync.logNowPlayingEvent("timeControl", trigger: "observer", extra: "status=paused error=\(errMsg)")
+                    self.cancelWaitingStallWatchdog()
                     if self.isPlaying {
                         self.nowPlayingSync.warnNowPlayingMismatch("truth=playing,av.timeControl=paused error=\(errMsg)", event: "timeControl", trigger: "observer")
                     }
@@ -809,7 +828,12 @@ final class AudioPlayerService {
                     self.nowPlayingSync.logNowPlayingEvent("timeControl", trigger: "observer", extra: "status=waiting reason=\(waitDesc)")
                     // バッファリング中も再生意図 (rate=1) を維持する。
                     // iOS がこの状態を見て rate=0 を NowPlayingInfo に書くことがあるため即座に上書きする。
-                    if self.isPlaying { self.nowPlayingSync.applyNowPlayingInfo() }
+                    if self.isPlaying {
+                        self.nowPlayingSync.applyNowPlayingInfo()
+                        // waiting のまま戻らない（stuck buffering）と実際には音が止まっているのに
+                        // isPlaying=true・rate=1 が書かれ続けるため、監視を開始する。
+                        self.scheduleWaitingStallWatchdogIfNeeded()
+                    }
                 @unknown default:
                     break
                 }
@@ -839,6 +863,28 @@ final class AudioPlayerService {
         timeControlObserver = nil
         rateObserver?.invalidate()
         rateObserver = nil
+        cancelWaitingStallWatchdog()
+    }
+
+    /// `.waitingToPlayAtSpecifiedRate` に入るたびに呼ばれる。既に監視中なら何もしない
+    /// （waiting イベントは同一状態のまま何度も発火し得るため、都度タイマーを延長しない）。
+    private func scheduleWaitingStallWatchdogIfNeeded(timeout: TimeInterval = 15) {
+        guard waitingStallWatchdogTask == nil else { return }
+        waitingStallWatchdogTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(timeout))
+            guard let self, !Task.isCancelled else { return }
+            self.waitingStallWatchdogTask = nil
+            guard self.isPlaying, self.player?.timeControlStatus == .waitingToPlayAtSpecifiedRate else { return }
+            bgLog.warning("⚠️ waiting-stall: stuck in waitingToPlayAtSpecifiedRate for \(timeout)s — treating as stall")
+            self.isNetworkStalled = true
+            self.nowPlayingSync.applyNowPlayingInfo()
+            self.handlePlaybackStall()
+        }
+    }
+
+    private func cancelWaitingStallWatchdog() {
+        waitingStallWatchdogTask?.cancel()
+        waitingStallWatchdogTask = nil
     }
 
     private func handlePlaybackStall() {
@@ -931,6 +977,7 @@ final class AudioPlayerService {
         stopActiveFolderAccess()
         player?.pause()
         isPlaying = false
+        isNetworkStalled = false
         syncPlaybackChrome()
         syncPlaybackActivityFlag()
         if let obs = timeObserver {
@@ -961,7 +1008,7 @@ final class AudioPlayerService {
             player?.seek(to: t, toleranceBefore: .zero, toleranceAfter: .zero)
             currentTime = 0
             currentEpisode?.playbackPosition = 0
-            player?.play()
+            playCurrentItem()
             isPlaying = true
             syncPlaybackChrome(liveTime: currentTime)
             syncPlaybackActivityFlag()
@@ -992,7 +1039,7 @@ final class AudioPlayerService {
         // 次のエピソードが見つからず再生が完全に止まった場合はオーディオセッションを手放す。
         // これにより Spotify など他のオーディオアプリが音声セッションを取得しやすくなる。
         if !isPlaying && !isInBackground {
-            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            releasePlaybackAudioSession(notifyOthers: true)
         }
     }
 
@@ -1044,13 +1091,20 @@ final class AudioPlayerService {
                 didApplyPlaybackCategory = true
             }
             try session.setActive(true, options: [])
+            playbackAudioSessionIsActive = true
             bgLog.info("✅ session active. category=\(session.category.rawValue) route=\(session.currentRoute.outputs.first?.portName ?? "none")")
         } catch {
             bgLog.error("❌ setActive failed: \(error)")
             didApplyPlaybackCategory = false
             try? session.setCategory(.playback, mode: .default, options: [])
             didApplyPlaybackCategory = true
-            try? session.setActive(true, options: [])
+            do {
+                try session.setActive(true, options: [])
+                playbackAudioSessionIsActive = true
+            } catch {
+                playbackAudioSessionIsActive = false
+                bgLog.error("❌ setActive retry failed: \(error)")
+            }
         }
     }
 
@@ -1153,6 +1207,11 @@ final class AudioPlayerService {
             startBackgroundPositionTracking()
             Task { await ThumbnailImageCache.shared.purgeMemory() }
             bgLog.info("didEnterBackground: kept audio session active, paused non-playback work")
+        } else if currentEpisode != nil, playbackAudioSessionIsActive {
+            // すでに止まっているのにセッションが残っていると、CC だけ ⏸ のままになる。
+            // バックグラウンドへ入る時点で手放す。他アプリの再開通知はしない。
+            nowPlayingSync.applyNowPlayingInfo()
+            releasePlaybackAudioSession(notifyOthers: false)
         }
     }
 
@@ -1221,7 +1280,14 @@ final class AudioPlayerService {
         // バックグラウンド中に elapsed が古いまま固まっていた場合もここでリセットされる。
         nowPlayingSync.updateNowPlaying()
 
-        guard isPlaying else { return }
+        guard isPlaying else {
+            // バックグラウンド中にセッションを手放し損ねたとき、復帰で CC の ⏸ を下ろす。
+            // すでに手放していれば何もしない（setActive の連打はクリックノイズになる）。
+            if playbackAudioSessionIsActive {
+                releasePlaybackAudioSession(notifyOthers: false)
+            }
+            return
+        }
         startPeriodicSave()
         // isPlaying はユーザーの再生意図を保持する。rate=0 はプレイヤーが予期せず停止した証拠。
         if player?.rate == 0 {
@@ -1333,7 +1399,7 @@ final class AudioPlayerService {
                 // replaceCurrentItem 後にセッションが非アクティブになっていることがあるため再確認する。
                 if self.isPlaying {
                     self.preparePlaybackAudioSession()
-                    self.player?.play()
+                    self.playCurrentItem()
                 }
                 self.nowPlayingSync.updateNowPlaying(elapsed: resumeAt)
                 if self.isPlaying {
@@ -1458,22 +1524,71 @@ final class AudioPlayerService {
     }
 
     /// ユーザー操作以外で再生が止まったときの共通処理（自動再開しない）。
-    private func notePlaybackStoppedWithoutUserAction() {
+    ///
+    /// `notifyOthersOnDeactivation` は、再生を終えて他アプリにセッションを返してよいときだけ true。
+    /// 通話・Siri の割り込み開始中は false（通話中に別の再生を起こさない）。
+    private func notePlaybackStoppedWithoutUserAction(notifyOthersOnDeactivation: Bool) {
         isPlaying = false
+        isNetworkStalled = false
+        stopNetworkRecoveryMonitor()
         if isInBackground {
             backgroundNowPlayingTask?.cancel()
             backgroundNowPlayingTask = nil
         }
         syncPlaybackChrome()
         syncPlaybackActivityFlag()
-        nowPlayingSync.updateNowPlaying()
+        publishPausedNowPlaying(
+            elapsed: nil,
+            notifyOthersOnDeactivation: notifyOthersOnDeactivation,
+            releaseInBackground: true
+        )
+    }
+
+    /// 停止をコントロールセンターとロック画面へ届ける。
+    ///
+    /// オーディオセッションがアクティブなままだと、システムが再生中と推測し、
+    /// `playbackState = .paused` を書いても ⏸ が残ることがある。
+    /// バックグラウンドのままスピーカーを奪われたときも手放す。
+    /// 停止側では再生レートの 0→1 は作らない。一瞬再生中に見えるため。
+    private func publishPausedNowPlaying(
+        elapsed: TimeInterval?,
+        notifyOthersOnDeactivation: Bool,
+        releaseInBackground: Bool = false
+    ) {
+        nowPlayingSync.applyNowPlayingInfo(elapsed: elapsed)
+        nowPlayingSync.syncRemoteCommandsAvailability()
+        nowPlayingSync.scheduleNowPlayingReassert(elapsed: elapsed)
+        if isInBackground, !releaseInBackground { return }
+        releasePlaybackAudioSession(notifyOthers: notifyOthersOnDeactivation)
+    }
+
+    /// `defaultRate` を 1 に戻してから再生する。停止中は 0 にしてある。
+    private func playCurrentItem() {
+        guard let player else { return }
+        player.defaultRate = 1
+        player.play()
+    }
+
+    /// すでに止まっているときのリモート一時停止。セッションを手放して CC の ⏸ を下ろす。
+    func releasePlaybackAudioSessionFromRemotePause() {
+        releasePlaybackAudioSession(notifyOthers: true)
+    }
+
+    private func releasePlaybackAudioSession(notifyOthers: Bool) {
+        let options: AVAudioSession.SetActiveOptions = notifyOthers ? .notifyOthersOnDeactivation : []
+        do {
+            try AVAudioSession.sharedInstance().setActive(false, options: options)
+            playbackAudioSessionIsActive = false
+        } catch {
+            bgLog.error("❌ setActive(false) failed: \(error)")
+        }
     }
 
     private func pauseDueToExternalAudio() {
         bgLog.warning("⏸ pauseDueToExternalAudio called (interruption .began)")
         guard player != nil else { return }
         player?.pause()
-        notePlaybackStoppedWithoutUserAction()
+        notePlaybackStoppedWithoutUserAction(notifyOthersOnDeactivation: false)
         // 割り込み（電話・Siri等）による自動停止。バックグラウンド中でも強制フラッシュする。
         persistPosition(force: true)
         saveTask?.cancel()
@@ -1492,7 +1607,7 @@ final class AudioPlayerService {
             // Apple HIG: イヤホン・Bluetooth が外れたら自動で一時停止する
             if isPlaying {
                 player?.pause()
-                notePlaybackStoppedWithoutUserAction()
+                notePlaybackStoppedWithoutUserAction(notifyOthersOnDeactivation: true)
                 // イヤホン等の切断による自動停止。バックグラウンド中でも強制フラッシュする。
                 persistPosition(force: true)
                 saveTask?.cancel()
@@ -1523,7 +1638,7 @@ final class AudioPlayerService {
             nowPlayingSync.logNowPlayingEvent("interruption", trigger: "system", extra: "phase=ended shouldResume=\(shouldResume) wasPlaying=\(wasPlayingAtInterruption)")
             if wasPlayingAtInterruption && shouldResume {
                 preparePlaybackAudioSession()
-                player?.play()
+                playCurrentItem()
                 isPlaying = true
                 syncPlaybackChrome(liveTime: currentTime)
                 syncPlaybackActivityFlag()
@@ -1534,6 +1649,14 @@ final class AudioPlayerService {
                 }
                 nowPlayingSync.updateNowPlaying()
                 nowPlayingSync.scheduleNowPlayingReassert()
+            } else if wasPlayingAtInterruption {
+                // 割り込みが終わると、システムが playbackState を再生中へ戻すことがある。
+                // 再開しないときは停止を書き直し、他アプリへセッションを返す。
+                publishPausedNowPlaying(
+                    elapsed: nil,
+                    notifyOthersOnDeactivation: true,
+                    releaseInBackground: true
+                )
             }
             wasPlayingAtInterruption = false
         @unknown default:
@@ -1614,6 +1737,7 @@ final class AudioPlayerService {
         newPlayer.allowsExternalPlayback = false
         newPlayer.automaticallyWaitsToMinimizeStalling = !isLocalFile
         player = newPlayer
+        nowPlayingSync.attachPlayer(newPlayer)
 
         attachPeriodicTimeObserver(generation: generation)
         attachEndObserver(for: item)
