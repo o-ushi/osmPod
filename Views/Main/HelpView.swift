@@ -50,55 +50,47 @@ struct HelpView: View {
                 }
 
                 Section {
-                    helpRow(icon: "magnifyingglass.circle.fill", color: .green, title: s.helpAddShowSearchTitle, body: s.helpAddShowSearchBody)
-                    helpRow(icon: "link.circle.fill", color: .teal, title: s.helpAddShowRSSTitle, body: s.helpAddShowRSSBody)
-                    helpRow(icon: "sparkles", color: .indigo, title: s.helpAddShowAITitle, body: s.helpAddShowAIBody)
-                } header: {
-                    Text(s.helpSectionAddShow)
-                        .foregroundStyle(AppPalette.textOnSubpageSecondary)
+                    OsmDisclosureRow(title: s.helpTAddTitle, systemImage: "magnifyingglass", accent: .orange) {
+                        OsmStepList(steps: [s.helpTAdd1, s.helpTAdd2, s.helpTAdd3], accent: .orange)
+                    }
+                    OsmDisclosureRow(title: s.helpTRssTitle, systemImage: "link", accent: .orange) {
+                        OsmStepList(steps: [s.helpTRss1, s.helpTRss2], accent: .orange)
+                    }
+                    OsmDisclosureRow(title: s.helpTAiTitle, systemImage: "sparkles", accent: .orange) {
+                        OsmStepList(steps: [s.helpTAi1, s.helpTAi2, s.helpTAi3], accent: .orange)
+                    }
+                    OsmDisclosureRow(title: s.helpTFolderTitle, systemImage: "folder", accent: .orange) {
+                        OsmStepList(steps: [s.helpTFolder1, s.helpTFolder2], accent: .orange)
+                    }
+                    OsmDisclosureRow(title: s.helpTSortTitle, systemImage: "arrow.up.arrow.down", accent: .orange) {
+                        OsmStepList(steps: [s.helpTSort1], accent: .orange)
+                    }
                 }
                 .osmSettingsCardRow()
 
                 Section {
-                    helpRow(icon: "folder.fill", color: .blue, title: s.helpLibraryFoldersTitle, body: s.helpLibraryFoldersBody)
-                    helpRow(icon: "arrow.up.arrow.down.circle.fill", color: .purple, title: s.helpLibrarySortTitle, body: s.helpLibrarySortBody)
-                } header: {
-                    Text(s.helpSectionLibrary)
-                        .foregroundStyle(AppPalette.textOnSubpageSecondary)
+                    OsmDisclosureRow(title: s.helpTSearchTitle, systemImage: "magnifyingglass.circle", accent: .blue) {
+                        OsmStepList(steps: [s.helpTSearch1], accent: .blue)
+                    }
+                    OsmDisclosureRow(title: s.helpTPlayTitle, systemImage: "play.circle", accent: .blue) {
+                        OsmStepList(steps: [s.helpTPlay1], accent: .blue)
+                    }
+                    OsmDisclosureRow(title: s.helpTRandomTitle, systemImage: "shuffle", accent: .blue) {
+                        OsmStepList(steps: [s.helpTRandom1, s.helpTRandom2], accent: .blue)
+                    }
+                    OsmDisclosureRow(title: s.helpTShakeTitle, systemImage: "iphone.radiowaves.left.and.right", accent: .blue) {
+                        OsmStepList(steps: [s.helpTShake1, s.helpTShake2], accent: .blue)
+                    }
                 }
                 .osmSettingsCardRow()
 
                 Section {
-                    helpRow(icon: "magnifyingglass.circle.fill", color: .gray, title: s.helpSearchInstantTitle, body: s.helpSearchInstantBody)
-                } header: {
-                    Text(s.helpSectionSearch)
-                        .foregroundStyle(AppPalette.textOnSubpageSecondary)
-                }
-                .osmSettingsCardRow()
-
-                Section {
-                    helpRow(icon: "square.and.arrow.up.on.square.fill", color: .indigo, title: s.helpDataJsonTitle, body: s.helpDataJsonBody)
-                } header: {
-                    Text(s.helpSectionData)
-                        .foregroundStyle(AppPalette.textOnSubpageSecondary)
-                }
-                .osmSettingsCardRow()
-
-                Section {
-                    helpRow(icon: "play.circle.fill", color: .pink, title: s.helpPlaybackMiniTitle, body: s.helpPlaybackMiniBody)
-                    helpRow(icon: "shuffle", color: .mint, title: s.helpPlaybackRandomTitle, body: s.helpPlaybackRandomBody)
-                    helpRow(icon: "iphone.radiowaves.left.and.right", color: .orange, title: s.helpPlaybackShakeTitle, body: s.helpPlaybackShakeBody)
-                } header: {
-                    Text(s.helpSectionPlayback)
-                        .foregroundStyle(AppPalette.textOnSubpageSecondary)
-                }
-                .osmSettingsCardRow()
-
-                Section {
-                    helpRow(icon: "crown.fill", color: .orange, title: s.helpPlanIconTitle, body: s.helpPlanIconBody)
-                } header: {
-                    Text(s.helpSectionPlan)
-                        .foregroundStyle(AppPalette.textOnSubpageSecondary)
+                    OsmDisclosureRow(title: s.helpTBackupTitle, systemImage: "square.and.arrow.up", accent: .purple) {
+                        OsmStepList(steps: [s.helpTBackup1], accent: .purple)
+                    }
+                    OsmDisclosureRow(title: s.helpTPlanTitle, systemImage: "crown", accent: .purple) {
+                        OsmStepList(steps: [s.helpTPlan1], accent: .purple)
+                    }
                 }
                 .osmSettingsCardRow()
 
@@ -158,28 +150,73 @@ struct HelpView: View {
             }
         }
     }
-
-    private func helpRow(icon: String, color: Color, title: String, body: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label {
-                Text(title)
-                    .font(.title3.weight(.semibold))
-            } icon: {
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundStyle(color)
-            }
-            Text(body)
-                .font(.body.weight(.medium))
-                .foregroundStyle(AppPalette.textOnCardSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.vertical, 6)
-    }
 }
 
 #Preview {
     HelpView()
         .environment(LanguageSettings())
         .environment(PlanStore.shared)
+}
+
+/// ヘルプと設定で使う開閉の行（丸いアイコン・見出し・開閉の印）。閉じて始まる。
+struct OsmDisclosureRow<Content: View>: View {
+    let title: String
+    let systemImage: String
+    let accent: Color
+    @State private var isExpanded = false
+    @ViewBuilder let content: () -> Content
+
+    init(
+        title: String,
+        systemImage: String,
+        accent: Color,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.accent = accent
+        self.content = content
+    }
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $isExpanded) {
+            content()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(accent)
+                    .frame(width: 36, height: 36)
+                    .background(accent.opacity(0.15), in: Circle())
+                Text(title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+            }
+        }
+        .tint(.secondary)
+    }
+}
+
+/// 番号付きの手順。
+struct OsmStepList: View {
+    let steps: [String]
+    let accent: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("\(index + 1)")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(accent)
+                        .frame(width: 16, alignment: .leading)
+                    Text(step)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
 }
