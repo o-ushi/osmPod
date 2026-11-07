@@ -126,6 +126,7 @@ private enum SceneStatusBarStyle {
     private nonisolated(unsafe) static var patchedOwners = Set<ObjectIdentifier>()
     private nonisolated(unsafe) static var lastLeafID: ObjectIdentifier?
     private nonisolated(unsafe) static var lastStyle: Int?
+    private nonisolated(unsafe) static var isWatchingPresentation = false
 
     @MainActor
     static var rootViewController: UIViewController? {
@@ -152,11 +153,24 @@ private enum SceneStatusBarStyle {
             leaf = controller
             current = controller.childForStatusBarStyle
         }
+        watchPresentationUntilDismissed(from: root)
         let leafID = ObjectIdentifier(leaf)
         guard lastLeafID != leafID || lastStyle != style.rawValue else { return }
         lastLeafID = leafID
         lastStyle = style.rawValue
         root.setNeedsStatusBarAppearanceUpdate()
+    }
+
+    /// 全画面モーダルを閉じても `presentedViewController` の KVO やレイアウト更新は来ないことがあり、
+    /// 文字色が黒のまま残る。モーダルが開いている間だけ、閉じたことを定期的に確かめる。
+    @MainActor
+    private static func watchPresentationUntilDismissed(from root: UIViewController) {
+        guard root.presentedViewController != nil, !isWatchingPresentation else { return }
+        isWatchingPresentation = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            isWatchingPresentation = false
+            applyForCurrentPresentation()
+        }
     }
 
     @MainActor
