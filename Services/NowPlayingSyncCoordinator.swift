@@ -12,8 +12,11 @@ private let npLog = Logger(subsystem: "com.osamushikubo.osmPod", category: "NowP
 /// `init` の中で `owner` を自分自身に設定して使う（`AudioPlayerService.init` 内では `self` が
 /// まだ使えないため、生成直後に弱参照を後付けする）。
 ///
-/// Spotify / Apple Podcasts と同じ定番構成:
-/// MPNowPlayingInfoCenter.default() + MPRemoteCommandCenter.shared()
+/// CC / ロック画面は `MPNowPlayingSession`（iOS 16+）経由で管理する。AVAudioSession が
+/// アクティブな限り「再生中」と自動推測して上書きしてしまう legacy な `.default()` /
+/// `.shared()` の挙動を避け、現在の AVPlayer に紐付いた専用の nowPlayingInfoCenter /
+/// remoteCommandCenter を使うことで、バックグラウンドのネットワーク切断時でも意図通りに
+/// 一時停止表示へ補正できるようにしている（`infoCenter` / `commandCenter` 経由でアクセス）。
 /// 正は `AudioPlayerService.isPlaying` のみ。CC / ロック画面は pausePlayback / resumePlayback の末尾で同期する。
 @MainActor
 final class NowPlayingSyncCoordinator {
@@ -24,8 +27,50 @@ final class NowPlayingSyncCoordinator {
     private var nowPlayingArtworkTask: Task<Void, Never>?
     /// iOS が CC 操作後に playbackRate を 1.0 へ戻すことがあるため、短い遅延で再反映する。
     private var nowPlayingReassertTask: Task<Void, Never>?
-    /// リモートコマンドは1回だけ登録する。
-    private var didSetupRemoteCommands = false
+    /// バックグラウンドでネットワークが切れて実際には無音でも、AVAudioSession がアクティブな限り
+    /// iOS が「再生中」と自動推測して Control Center 側の表示を上書きしてしまう問題への対策。
+    /// MPNowPlayingSession（iOS 16+）は特定の AVPlayer に紐付いた専用の nowPlayingInfoCenter /
+    /// remoteCommandCenter を持ち、その自動推測から切り離して CC/LS の表示を直接制御できる。
+    /// players 配列が空だと init 時にアサートするため、最初の AVPlayer ができるまで遅延生成する。
+    /// 新しい AVPlayer が来るたび `attachPlayer` でセッションごと作り直す（理由は `attachPlayer` 参照）。
+    private var nowPlayingSession: MPNowPlayingSession?
+
+    private var infoCenter: MPNowPlayingInfoCenter {
+        nowPlayingSession?.nowPlayingInfoCenter ?? MPNowPlayingInfoCenter.default()
+    }
+    private var commandCenter: MPRemoteCommandCenter {
+        nowPlayingSession?.remoteCommandCenter ?? MPRemoteCommandCenter.shared()
+    }
+
+    /// 新しい AVPlayer ができるたび（`startPlayback` / `installRestoredPlayer`）に呼ぶ。
+    ///
+    /// 既存セッションの players を addPlayer/removePlayer で入れ替える方式は試したが、
+    /// OS 側（nowplayingd）の内部登録状態と Swift 側の `session.players` がズレることがあり、
+    /// ズレたまま removePlayer を呼ぶと「そのプレイヤーはobserverとして登録されていない」で
+    /// 即アボートする（実機で発生確認済み。Swift の do/catch では捕まえられない ObjC 例外）。
+    /// そのためプレイヤーが変わるたびセッションごと作り直す。古いセッションは参照を手放すだけで
+    /// OS 側の解除は deinit に任せ、危険な removePlayer 呼び出し自体を避ける。
+    func attachPlayer(_ player: AVPlayer) {
+        let session = MPNowPlayingSession(players: [player])
+        // true のままだと nowPlayingInfoCenter を手動で使えない（AVPlayerItem 側の
+        // nowPlayingInfo に頼る自動公開になり、rate/playbackState を独自ロジックで
+        // 補正できなくなる）ため、必ず手動管理にする。
+        session.automaticallyPublishesNowPlayingInfo = false
+        nowPlayingSession = session
+        // セッションを作り直すたびリモートコマンドのターゲットも新しい commandCenter に
+        // 登録し直す必要がある（前のセッションの commandCenter は解放されて無効になる）。
+        setupRemoteCommands()
+        nowPlayingSession?.becomeActiveIfPossible { [weak self] isActive in
+            guard let self else { return }
+            Task { @MainActor in
+                self.logNowPlayingEvent("nowPlayingSession", trigger: "internal", extra: "becomeActive=\(isActive)")
+                // 非アクティブ中の nowPlayingInfo はコントロールセンターに届かない。
+                // セッションが聴き始めた瞬間に、そのときの isPlaying を書き直す。
+                guard isActive else { return }
+                self.applyNowPlayingInfo()
+            }
+        }
+    }
 
     // MARK: - CS/LS 表示ズレ調査用ログ
     //
@@ -49,16 +94,25 @@ final class NowPlayingSyncCoordinator {
         case .none: avTimeControl = "nil"
         @unknown default: avTimeControl = "unknown"
         }
-        let npInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo
+        let npInfo = infoCenter.nowPlayingInfo
         let npRate = (npInfo?[MPNowPlayingInfoPropertyPlaybackRate] as? NSNumber)?.doubleValue
         let npElapsed = (npInfo?[MPNowPlayingInfoPropertyElapsedPlaybackTime] as? NSNumber)?.doubleValue
-        let center = MPRemoteCommandCenter.shared()
+        let center = commandCenter
         let episodeID = owner.currentEpisode.map { String($0.audioURL.suffix(10)) } ?? "nil"
+        let itemStatus: String
+        switch player?.currentItem?.status {
+        case .some(.unknown): itemStatus = "unknown"
+        case .some(.readyToPlay): itemStatus = "readyToPlay"
+        case .some(.failed): itemStatus = "failed(\(player?.currentItem?.error?.localizedDescription ?? "?"))"
+        case .none: itemStatus = "nil"
+        @unknown default: itemStatus = "unknown"
+        }
 
         var line = "event=\(event) trigger=\(trigger)"
-        line += " truth.isPlaying=\(owner.isPlaying)"
-        line += " av.rate=\(avRate) av.timeControl=\(avTimeControl)"
+        line += " truth.isPlaying=\(owner.isPlaying) truth.isNetworkStalled=\(owner.isNetworkStalled)"
+        line += " av.rate=\(avRate) av.timeControl=\(avTimeControl) av.itemStatus=\(itemStatus)"
         line += " np.rate=\(npRate.map { String($0) } ?? "nil")"
+        line += " np.playbackState=\(infoCenter.playbackState) np.sessionActive=\(nowPlayingSession?.isActive ?? false)"
         line += " np.elapsed=\(npElapsed.map { String(format: "%.1f", $0) } ?? "nil")"
         line += " np.hasInfo=\(npInfo != nil)"
         line += " remote.playEnabled=\(center.playCommand.isEnabled) remote.pauseEnabled=\(center.pauseCommand.isEnabled)"
@@ -77,7 +131,7 @@ final class NowPlayingSyncCoordinator {
     /// truth / av / np の不一致を明示する WARNING。再現調査の起点になるため、
     /// 開発者モードの ON/OFF に関わらず常に残す。
     func warnNowPlayingMismatch(_ reason: String, event: String, trigger: String) {
-        npLog.warning("⚠️ mismatch(\(reason)): \(self.nowPlayingLogLine(event: event, trigger: trigger), privacy: .public)")
+        npLog.warning("⚠️ mismatch(\(reason, privacy: .public)): \(self.nowPlayingLogLine(event: event, trigger: trigger), privacy: .public)")
     }
 
     // MARK: - Now Playing
@@ -85,11 +139,17 @@ final class NowPlayingSyncCoordinator {
     func clearNowPlaying() {
         nowPlayingReassertTask?.cancel()
         nowPlayingReassertTask = nil
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        infoCenter.nowPlayingInfo = nil
+        infoCenter.playbackState = .stopped
         syncRemoteCommandsAvailability()
     }
 
     /// `AudioPlayerService.teardownPlayer()` から呼ぶ。アートワーク読み込みも含めて全タスクを止める。
+    /// ここではセッションからプレイヤーを外さない（次のエピソードへ続けて再生する場合、
+    /// 直後の `attachPlayer` が新プレイヤー追加→旧プレイヤー削除の順で入れ替えるため、
+    /// ここで先に外すと players が一瞬空になりフリーズ・クラッシュの原因になる。
+    /// 完全に再生が止まって次の attachPlayer が来ない場合でも、古いプレイヤーが
+    /// 1つ残るだけで実害はない）。
     func teardown() {
         cancelArtworkLoading()
         clearNowPlaying()
@@ -117,7 +177,7 @@ final class NowPlayingSyncCoordinator {
 
     private func playbackRateForNowPlaying() -> Double {
         guard let owner else { return 0 }
-        return (owner.didReachPlaybackEnd || !owner.isPlaying) ? 0 : 1
+        return (owner.didReachPlaybackEnd || !owner.isPlaying || owner.isNetworkStalled) ? 0 : 1
     }
 
     /// CC / ロック画面へ `isPlaying` を書き込む。
@@ -129,14 +189,42 @@ final class NowPlayingSyncCoordinator {
 
         let resolvedElapsed = elapsed ?? resolvedElapsedForNowPlaying()
         let rate = playbackRateForNowPlaying()
+        // CC は PlaybackRate が 0 でも、DefaultPlaybackRate や AVPlayer.defaultRate が
+        // 1 のままだと再生中とみなして ⏸ に戻す。止まっているあいだは両方 0 にする。
+        owner.player?.defaultRate = rate > 0 ? 1 : 0
 
         var info = buildNowPlayingMetadataDictionary()
         info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = NSNumber(value: resolvedElapsed)
         info[MPNowPlayingInfoPropertyPlaybackRate] = NSNumber(value: rate)
-        info[MPNowPlayingInfoPropertyDefaultPlaybackRate] = NSNumber(value: 1.0)
+        info[MPNowPlayingInfoPropertyDefaultPlaybackRate] = NSNumber(value: rate > 0 ? 1.0 : 0.0)
 
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+        let state: MPNowPlayingPlaybackState = rate > 0 ? .playing : .paused
+        infoCenter.nowPlayingInfo = info
+        infoCenter.playbackState = state
+        suppressStaleDefaultNowPlayingCenter(publishedRate: rate)
+        // nowPlayingInfo の代入が playbackState を非同期で再生中へ戻すことがある。
+        // 同じ値をもう一度、次のターンで書き直してその上書きに勝つ。
+        let publishedRate = rate
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            guard self.playbackRateForNowPlaying() == publishedRate else { return }
+            self.infoCenter.playbackState = state
+        }
         logNowPlayingEvent("applyNowPlaying", trigger: "internal", extra: "wroteRate=\(rate) wroteElapsed=\(String(format: "%.1f", resolvedElapsed))")
+    }
+
+    /// セッション経由で書いているあいだ、`.default()` に残ったレートで
+    /// コントロールセンターが ⏸ に戻らないように、同じ再生状態を重ねて書く。
+    private func suppressStaleDefaultNowPlayingCenter(publishedRate: Double) {
+        guard nowPlayingSession != nil else { return }
+        let shared = MPNowPlayingInfoCenter.default()
+        guard shared !== infoCenter else { return }
+        if var info = shared.nowPlayingInfo {
+            info[MPNowPlayingInfoPropertyPlaybackRate] = NSNumber(value: publishedRate)
+            info[MPNowPlayingInfoPropertyDefaultPlaybackRate] = NSNumber(value: publishedRate > 0 ? 1.0 : 0.0)
+            shared.nowPlayingInfo = info
+        }
+        shared.playbackState = publishedRate > 0 ? .playing : .paused
     }
 
     /// メタデータ更新（アートワーク・duration 等）向け。
@@ -196,19 +284,23 @@ final class NowPlayingSyncCoordinator {
     /// 有効なので、待機中に状態が変わっていたら何もしない。
     func forceNowPlayingRateEdge(elapsed: TimeInterval?, expectedPlaying: Bool) async {
         guard let owner, owner.currentEpisode != nil else { return }
-        var info = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? buildNowPlayingMetadataDictionary()
+        var info = infoCenter.nowPlayingInfo ?? buildNowPlayingMetadataDictionary()
         info[MPNowPlayingInfoPropertyPlaybackRate] = NSNumber(value: 0.0)
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+        infoCenter.nowPlayingInfo = info
         logNowPlayingEvent("rateEdge", trigger: "internal", extra: "phase=zero expectedPlaying=\(expectedPlaying)")
         try? await Task.sleep(for: .milliseconds(30))
         guard !Task.isCancelled, self.owner?.isPlaying == expectedPlaying else {
-            // ここで抜けると nowPlayingInfo が rate=0 のまま取り残される。
-            // truth=playing のまま残ると「LS は ▶︎ のまま」＝パターン2 と一致するので必ず WARNING を残す。
-            if expectedPlaying, self.owner?.isPlaying == true {
+            // ここで何もせず抜けると nowPlayingInfo が rate=0 のまま取り残され、実際は再生中なのに
+            // CC/ロック画面が ▶︎（停止扱い）のまま固まる「パターン2」を引き起こす
+            // （このタスクが別の scheduleNowPlayingReassert 呼び出しにキャンセルされた場合など）。
+            // truth（isPlaying）が再生中である限り、このタスク自体がキャンセルされていても
+            // 同期的な nowPlayingInfo 書き込みは問題なく効くので、必ず正しい値へ復元してから抜ける。
+            if self.owner?.isPlaying == true {
                 warnNowPlayingMismatch(
-                    "truth=playing but rateEdge aborted (cancelled=\(Task.isCancelled)) — np may be stuck at rate=0",
+                    "rateEdge aborted (cancelled=\(Task.isCancelled)) while truth=playing — restoring np immediately",
                     event: "rateEdge", trigger: "internal"
                 )
+                applyNowPlayingInfo(elapsed: elapsed)
             } else {
                 logNowPlayingEvent("rateEdge", trigger: "internal", extra: "phase=abort cancelled=\(Task.isCancelled) isPlayingNow=\(self.owner?.isPlaying ?? false)")
             }
@@ -221,7 +313,7 @@ final class NowPlayingSyncCoordinator {
     /// play/pause は常に有効（`isPlaying` で切ると CC / ロック画面の ▶︎ が薄くなる）。
     func syncRemoteCommandsAvailability() {
         guard let owner else { return }
-        let center = MPRemoteCommandCenter.shared()
+        let center = commandCenter
         let active = owner.currentEpisode != nil && !owner.didReachPlaybackEnd
         center.playCommand.isEnabled = active
         center.pauseCommand.isEnabled = active
@@ -316,11 +408,8 @@ final class NowPlayingSyncCoordinator {
         }
     }
 
-    func setupRemoteCommandsIfNeeded() {
-        guard !didSetupRemoteCommands else { return }
-        didSetupRemoteCommands = true
-
-        let center = MPRemoteCommandCenter.shared()
+    private func setupRemoteCommands() {
+        let center = commandCenter
         center.togglePlayPauseCommand.isEnabled = false
 
         center.playCommand.addTarget { [weak self] _ in
@@ -345,9 +434,7 @@ final class NowPlayingSyncCoordinator {
                     owner.wasPlayingAtInterruption = false
                     self.applyNowPlayingInfo()
                     self.syncRemoteCommandsAvailability()
-                    if !owner.isInBackground {
-                        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-                    }
+                    owner.releasePlaybackAudioSessionFromRemotePause()
                     self.logNowPlayingEvent("remote.pause", trigger: "remote", extra: "phase=alreadyPaused")
                 }
                 return .success

@@ -90,114 +90,46 @@ struct LocalizedStrings {
 
     var helpVersionFormat: String { t("バージョン %@ (%@)", "Version %@ (%@)", "Phiên bản %@ (%@)") }
 
-    /// osmStroll のヘルプ冒頭と同様、ワクワクするトーンの紹介文。
-    var helpIntro: String {
-        t(
-            "お気に入りのポッドキャストを、ひとつのライブラリに。RSS で番組を追加し、フォルダと並び替えで「聴く順番」と「世界観」を自分仕様に。いつでもどこでもサッと検索して、タップひとつで再生へ——あなたの「聴く時間」を、もっと楽しく、もっと自分らしく。",
-            "Gather your favorite podcasts in one place. Add shows via RSS, organize them in folders, and tune the order to match your mood. Search in seconds, tap to play, and turn every spare moment into listening joy—the library feels unmistakably yours.",
-            "Gom các podcast yêu thích vào một thư viện. Thêm qua RSS, sắp xếp bằng thư mục và thứ tự đúng gu. Tìm nhanh, chạm là nghe — biến từng khoảnh khắc nghe thành niềm vui của riêng bạn."
-        )
-    }
+    var helpTAddTitle: String { t("番組を追加する", "Add a show", "Thêm chương trình") }
+    var helpTAdd1: String { t("⋯ の「\(addShow)」をタップ", "Tap \"\(addShow)\" in ⋯", "Chạm \"\(addShow)\" trong ⋯") }
+    var helpTAdd2: String { t("番組名かムードで探す", "Search by name or mood", "Tìm theo tên hoặc tâm trạng") }
+    var helpTAdd3: String { t("結果をタップして追加", "Tap a result to add it", "Chạm kết quả để thêm") }
+    var helpTRssTitle: String { t("RSS で追加する", "Add by RSS", "Thêm bằng RSS") }
+    var helpTRss1: String { t("番組の追加画面で RSS の URL を入力", "Enter the RSS URL on the add screen", "Nhập URL RSS ở màn hình thêm") }
+    var helpTRss2: String { t("Safari の共有から osmPod を選んでも取り込める", "Or choose osmPod from Share in Safari", "Hoặc chọn osmPod từ Chia sẻ trong Safari") }
+    var helpTAiTitle: String { t("Google AI で番組を探す", "Find shows with Google AI", "Tìm chương trình bằng Google AI") }
+    var helpTAi1: String { t("番組の追加画面から Google AI で探す", "Search with Google AI from the add screen", "Tìm bằng Google AI từ màn hình thêm") }
+    var helpTAi2: String { t("提案された RSS の URL をコピー", "Copy the suggested RSS URLs", "Sao chép các URL RSS được đề xuất") }
+    var helpTAi3: String { t("クリップボードから取り込む", "Import from the clipboard", "Nhập từ bộ nhớ tạm") }
+    var helpTFolderTitle: String { t("フォルダで整理する", "Organize with folders", "Sắp xếp bằng thư mục") }
+    var helpTFolder1: String { t("⋯ の「\(createFolder)」をタップ", "Tap \"\(createFolder)\" in ⋯", "Chạm \"\(createFolder)\" trong ⋯") }
+    var helpTFolder2: String { t("番組をドラッグして並べ替える", "Drag shows to reorder", "Kéo chương trình để sắp xếp") }
+    var helpTSortTitle: String { t("並びを変える", "Change the order", "Đổi thứ tự") }
+    var helpTSort1: String { t("ツールバーの並び替えメニューをタップ", "Tap the sort menu in the toolbar", "Chạm menu sắp xếp trên thanh công cụ") }
+    var helpTSearchTitle: String { t("エピソードを探す", "Find an episode", "Tìm tập") }
+    var helpTSearch1: String { t("画面上部の検索バーに入力", "Type in the search bar at the top", "Nhập vào thanh tìm kiếm ở trên cùng") }
+    var helpTPlayTitle: String { t("再生画面を開く", "Open the player", "Mở trình phát") }
+    var helpTPlay1: String { t("再生中に画面下のミニプレーヤーをタップ", "While playing, tap the mini player at the bottom", "Khi đang phát, chạm trình phát mini ở dưới cùng") }
+    var helpTRandomTitle: String { t("おまかせで再生する", "Play at random", "Phát ngẫu nhiên") }
+    var helpTRandom1: String { t("タスクバーのシャッフルをタップ", "Tap shuffle in the task bar", "Chạm trộn bài trên thanh tác vụ") }
+    var helpTRandom2: String { t("除く番組は再生オプションで選ぶ", "Choose excluded shows in the playback options", "Chọn chương trình loại trừ trong tùy chọn phát") }
+    var helpTShakeTitle: String { t("聞き直す", "Listen again", "Nghe lại") }
+    var helpTShake1: String { t("端末を振ると巻き戻す", "Shake the device to rewind", "Lắc máy để tua lại") }
+    var helpTShake2: String { t("秒数は再生オプションで選ぶ", "Choose the seconds in the playback options", "Chọn số giây trong tùy chọn phát") }
+    var helpTBackupTitle: String { t("ライブラリを書き出す・取り込む", "Export or import your library", "Xuất hoặc nhập thư viện") }
+    var helpTBackup1: String { t("「\(settings)」の「\(dataManagementGroup)」を開く", "Open \"\(dataManagementGroup)\" in \"\(settings)\"", "Mở \"\(dataManagementGroup)\" trong \"\(settings)\"") }
+    var helpTPlanTitle: String { t("プランを確かめる", "Check your plan", "Kiểm tra gói") }
+    var helpTPlan1: String { t("⋯ の「\(planManagementMenu)」をタップ", "Tap \"\(planManagementMenu)\" in ⋯", "Chạm \"\(planManagementMenu)\" trong ⋯") }
+    var helpIntro: String { t("ポッドキャストをひとつのライブラリで聴くアプリです。", "Listen to your podcasts in one library.", "Nghe podcast trong một thư viện.") }
+    var settingsGroupDisplay: String { t("表示と操作", "Display and controls", "Hiển thị và thao tác") }
+    var settingsGroupPlayback: String { t("再生とデータ", "Playback and data", "Phát và dữ liệu") }
 
-    var helpSectionAddShow: String { t("番組を追加する", "Adding Shows", "Thêm chương trình") }
-    var helpAddShowSearchTitle: String { t("名前やムードで探して追加", "Search by name or mood", "Tìm theo tên hoặc tâm trạng") }
-    var helpAddShowSearchBody: String {
-        t(
-            "「⋯」→「番組を追加」を開き、番組名やキーワードで検索します。英語・ビジネス・リラックスなどのムードタグからも一覧を絞れます。気になる結果をタップすると最新エピソードをプレビューしてから追加できます。",
-            "Tap ⋯ → Add Show and search by title or keyword. Browse mood tags like English, Business, or Relax. Tap any result to preview its latest episode before adding.",
-            "Nhấn ⋯ → Thêm chương trình rồi tìm theo tên hoặc từ khóa. Duyệt theo tâm trạng Tiếng Anh, Kinh doanh, Thư giãn... Nhấn kết quả để xem trước tập mới nhất trước khi thêm."
-        )
-    }
-    var helpAddShowRSSTitle: String { t("RSS URLで直接追加、Safari共有からも", "Add via RSS URL or Safari Share", "Thêm qua URL RSS hoặc Chia sẻ Safari") }
-    var helpAddShowRSSBody: String {
-        t(
-            "RSSのURLがわかっている場合は「RSSを直接入力」でそのまま登録できます。SafariでページをひらいたあとにiOSの「共有」→ osmPod を選べば、URLをまとめて取り込めます。初回は共有シートの「編集」でosmPodをオンにしてください。",
-            "If you have the RSS URL, paste it in Enter RSS Directly to register instantly. In Safari, tap the Share button → osmPod to import URLs at once—enable osmPod in Share sheet's Edit list on first use.",
-            "Nếu có URL RSS, dán vào Nhập RSS trực tiếp để đăng ký. Trong Safari, Chia sẻ → osmPod để nhập hàng loạt — lần đầu bật osmPod trong Chỉnh sửa."
-        )
-    }
-    var helpAddShowAITitle: String { t("Google AIで番組を発見する", "Discover shows with Google AI", "Khám phá chương trình bằng Google AI") }
-    var helpAddShowAIBody: String {
-        t(
-            "「Google AIで探す」から、聴きたいジャンルや話題を入力してGoogle AIに番組を提案してもらいます。返ってきたRSSのURLをコピーし、「クリップボードを読み取る」から一括で取り込めます。",
-            "In Search with Google AI, describe what you want to hear and let Google AI suggest podcasts. Copy the RSS URLs it returns, then tap Read Clipboard to batch-import them all at once.",
-            "Trong Tìm bằng Google AI, mô tả nội dung muốn nghe để Google AI gợi ý. Sao chép URL RSS rồi nhấn Đọc clipboard để nhập hàng loạt."
-        )
-    }
 
-    var helpSectionLibrary: String { t("ライブラリ", "Library", "Thư viện") }
-    var helpLibraryFoldersTitle: String { t("フォルダで、自分だけの棚をつくる", "Folders that feel like your shelf", "Thư mục — kệ podcast của riêng bạn") }
-    var helpLibraryFoldersBody: String {
-        t(
-            "ルートフォルダやサブフォルダをつくり、番組をドラッグして並べ替え。番組をタップするとエピソード一覧が広がり、今日聴きたい回へすぐ飛べます。",
-            "Create nested folders and drag shows into order. Tap a show to unfold its episodes—jump straight to the episode you’re craving.",
-            "Tạo thư mục và kéo chương trình để sắp xếp. Chạm chương trình để mở danh sách tập — nhảy ngay đến tập bạn muốn."
-        )
-    }
-    var helpLibrarySortTitle: String { t("並び替えで、今日の気分に合わせる", "Sort to match your mood", "Sắp xếp đúng tâm trạng hôm nay") }
-    var helpLibrarySortBody: String {
-        t(
-            "ツールバーの並び替えメニューから、フォルダ・エピソードの並びや日付順を切り替えられます。",
-            "Use the sort menu in the toolbar to reorder folders and episodes, including by date.",
-            "Dùng menu sắp xếp trên thanh công cụ để đổi thứ tự thư mục và tập, kể cả theo ngày."
-        )
-    }
 
-    var helpSectionSearch: String { t("検索", "Search", "Tìm kiếm") }
-    var helpSearchInstantTitle: String { t("一瞬で見つけるライブラリ内検索", "Find it fast", "Tìm trong nháy mắt") }
-    var helpSearchInstantBody: String {
-        t(
-            "画面上部の検索バーから、エピソードのタイトル・番組名・概要で絞り込み。話題の回や引用したい一言も、すぐ見つかります。",
-            "Search by episode title, show name, or description. Catch that trending episode or the quote you half-remember—in moments.",
-            "Lọc theo tiêu đề tập, tên chương trình hoặc mô tả. Tìm tập hot hay câu nói bạn nhớ mang máng — chỉ trong chốc lát."
-        )
-    }
 
-    var helpSectionData: String { t("データの移動・バックアップ", "Data & backup", "Dữ liệu & sao lưu") }
-    var helpDataJsonTitle: String { t("JSON でバックアップ、機種変更も安心", "Back up and move devices with JSON", "Sao lưu JSON, đổi máy vẫn yên tâm") }
-    var helpDataJsonBody: String {
-        t(
-            "「設定」→「データの管理」から、ライブラリを JSON で書き出したり、別端末へ読み込んだりできます。積み上げた番組リストを、大切に持ち運べます。",
-            "In Settings → Data Management, export your library to JSON or import it on another device—your curated collection travels with you.",
-            "Trong Cài đặt → Quản lý dữ liệu, xuất thư viện ra JSON hoặc nhập trên máy khác — bộ sưu tập podcast đi cùng bạn."
-        )
-    }
 
-    var helpSectionPlayback: String { t("再生", "Playback", "Phát") }
-    var helpPlaybackMiniTitle: String { t("ミニプレーヤーから、いつでも本編へ", "Mini player, full story", "Mini player — vào ngay nội dung") }
-    var helpPlaybackMiniBody: String {
-        t(
-            "再生中は画面下にミニプレーヤーが表示されます。タップするとフル画面の再生画面へ。通勤・家事・散歩の合間も、途切れずに楽しめます。",
-            "While playing, the mini player stays at the bottom—tap for the full player. Commute, chores, or a walk: your show keeps flowing.",
-            "Khi đang phát, mini player ở dưới cùng — chạm để mở màn hình đầy đủ. Đi làm, làm việc nhà hay đi bộ — không bị gián đoạn."
-        )
-    }
-    var helpPlaybackShakeTitle: String { t("シェイクでもう一度聞き直す", "Shake to replay the moment", "Lắc để nghe lại đoạn đó") }
-    var helpPlaybackShakeBody: String {
-        t(
-            "端末をかるく振ると、「設定」で指定した秒数だけ巻き戻せます。聞き逃しも怖くありません。",
-            "Give your device a quick shake to rewind by the seconds you set in Settings—never lose that line again.",
-            "Lắc nhẹ thiết bị để tua lại theo số giây đã đặt trong Cài đặt — không bỏ lỡ câu hay."
-        )
-    }
-    var helpPlaybackRandomTitle: String { t("ランダム再生で、次の出会いをおまかせ", "Shuffle across all your shows", "Phát ngẫu nhiên — khám phá bất ngờ") }
-    var helpPlaybackRandomBody: String {
-        t(
-            "タスクバーの「シャッフル」アイコンをタップするとランダム再生モードがオンになります。再生が終わるたびに、すべての番組を横断して未再生・再生中のエピソードをランダムに選んで自動再生します。「設定」→「再生しない番組」で除外した番組はスキップされます。",
-            "Tap the shuffle icon in the toolbar to enable random play mode. When each episode ends, the app picks a random unplayed or in-progress episode from across all your shows. Shows excluded in Settings → Excluded Shows are skipped.",
-            "Nhấn biểu tượng xáo trộn trên thanh công cụ để bật chế độ phát ngẫu nhiên. Khi mỗi tập kết thúc, ứng dụng chọn ngẫu nhiên một tập chưa nghe hoặc đang nghe dở từ tất cả chương trình. Các chương trình bị loại trừ trong Cài đặt → Chương trình không phát sẽ bị bỏ qua."
-        )
-    }
 
-    var helpSectionPlan: String { t("プラン", "Plan", "Gói") }
-    var helpPlanIconTitle: String { t("プランに合わせてアイコンが変わる", "An icon that matches your plan", "Biểu tượng thay đổi theo gói") }
-    var helpPlanIconBody: String {
-        t(
-            "画面上部では、お使いのプランに合わせたアプリの見た目を表示しています（FREE と PREMIUM でデザインが変わります）。「⋯」→「プラン管理」で上限の確認やアップグレードができます。",
-            "The header artwork reflects your plan—FREE and PREMIUM each have their own look. Open ⋯ → Plan Management to review limits or upgrade.",
-            "Ảnh phía trên phản ánh gói của bạn — FREE và PREMIUM có giao diện khác nhau. Vào ⋯ → Quản lý gói để xem giới hạn hoặc nâng cấp."
-        )
-    }
+
 
     // MARK: - Settings
 

@@ -76,6 +76,7 @@ struct osmPodApp: App {
     var body: some Scene {
         WindowGroup {
             MainView()
+                .background(AppPalette.scene.ignoresSafeArea())
                 .environment(audioPlayer)
                 .environment(audioPlayer.playbackChrome)
                 .environment(episodeDownloadService)

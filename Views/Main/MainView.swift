@@ -73,6 +73,7 @@ struct MainView: View {
                 await refreshShowLibraryAfterPullToRefresh(strings: s)
             }
             .background(AppPalette.scene)
+            .osmSceneStatusBar()
             .searchable(
                 text: $searchText,
                 placement: .navigationBarDrawer(displayMode: .always),

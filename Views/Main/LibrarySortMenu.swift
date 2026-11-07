@@ -44,7 +44,7 @@ struct LibrarySortToolbarMenu: View {
         VStack(alignment: .leading, spacing: 20) {
             Text(s.rootFolderReorderHint)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppPalette.textOnCardSecondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             folderControls(strings: s)
@@ -56,13 +56,15 @@ struct LibrarySortToolbarMenu: View {
         .frame(width: panelWidth, alignment: .leading)
         .padding(20)
         .fixedSize(horizontal: true, vertical: true)
+        .background(AppPalette.cardFill)
+        .preferredColorScheme(.light)
     }
 
     private func folderControls(strings s: LocalizedStrings) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(s.subfoldersSection)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppPalette.textOnCardPrimary)
 
             criterionRow(title: s.date, selected: folderOrder == .date) {
                 folderOrderRaw = FolderOrderOption.date.rawValue
@@ -85,7 +87,7 @@ struct LibrarySortToolbarMenu: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(s.episodes)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppPalette.textOnCardPrimary)
 
             criterionRow(title: s.date, selected: episodeOrder == .date) {
                 episodeOrderRaw = EpisodeOrderOption.date.rawValue
@@ -113,6 +115,7 @@ struct LibrarySortToolbarMenu: View {
         HStack(spacing: 12) {
             Text(label)
                 .font(.body)
+                .foregroundStyle(AppPalette.textOnCardPrimary)
             Spacer(minLength: 12)
             Toggle("", isOn: isOn)
                 .labelsHidden()
@@ -131,13 +134,13 @@ struct LibrarySortToolbarMenu: View {
             HStack(spacing: 10) {
                 Text(title)
                     .font(.body.weight(.medium))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(AppPalette.textOnCardPrimary)
                 Spacer(minLength: 12)
                 Group {
                     if selected {
                         Image(systemName: "checkmark")
                             .font(.body.weight(.semibold))
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(AppPalette.textOnCardPrimary)
                     }
                 }
                 .frame(width: 18, alignment: .center)
@@ -160,6 +163,7 @@ private struct SortMenuPresentationModifier<Panel: View>: ViewModifier {
             content
                 .popover(isPresented: $isPresented, arrowEdge: .top) {
                     panel()
+                        .presentationBackground(AppPalette.cardFill)
                 }
         } else {
             content
@@ -178,9 +182,11 @@ private struct SortMenuSheetContainer<Content: View>: View {
         VStack(spacing: 0) {
             content
         }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(AppPalette.cardFill)
         .presentationDetents([.height(372)])
         .presentationDragIndicator(.visible)
+        .presentationBackground(AppPalette.cardFill)
+        .preferredColorScheme(.light)
     }
 }

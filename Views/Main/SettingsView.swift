@@ -48,8 +48,8 @@ struct SettingsView: View {
                 }
                 .osmSettingsCardRow()
 
-                // 📅 日付表示
                 Section {
+                    OsmDisclosureRow(title: s.settingsGroupDisplay, systemImage: "slider.horizontal.3", accent: .orange) {
                     Picker(s.dateFormatSection, selection: $dateFormat) {
                         ForEach(DateFormat.allCases) { format in
                             Text(format.rawValue).tag(format)
@@ -59,17 +59,6 @@ struct SettingsView: View {
                     .onChange(of: dateFormat) { _, v in
                         AppSettings.dateFormat = v
                     }
-                } header: {
-                    Text(s.dateFormatSection)
-                        .foregroundStyle(AppPalette.textOnSubpageSecondary)
-                } footer: {
-                    Text(s.dateFormatFooter)
-                        .foregroundStyle(AppPalette.textOnSubpageSecondary)
-                }
-                .osmSettingsCardRow()
-
-                // 📳 フィードバック
-                Section {
                     if !isIPad {
                         Toggle(s.hapticFeedback, isOn: $enableHaptic)
                             .onChange(of: enableHaptic) { _, v in
@@ -110,51 +99,19 @@ struct SettingsView: View {
                                 }
                         }
                     }
-                } header: {
-                    Text(s.feedback)
-                        .foregroundStyle(AppPalette.textOnSubpageSecondary)
-                } footer: {
-                    Text(s.feedbackFooter)
-                        .foregroundStyle(AppPalette.textOnSubpageSecondary)
-                }
-                .osmSettingsCardRow()
-
-                // 🎚 再生オプション（シェイク巻き戻し・再生済み・自動再生をまとめたグループ）
-                Section {
+                    }
+                    OsmDisclosureRow(title: s.settingsGroupPlayback, systemImage: "play.circle", accent: .blue) {
                     NavigationLink {
                         PlaybackOptionsView()
                     } label: {
                         Label(s.playbackOptions, systemImage: "play.circle")
                     }
-                } footer: {
-                    Text(s.playbackOptionsFooter)
-                        .foregroundStyle(AppPalette.textOnSubpageSecondary)
-                }
-                .osmSettingsCardRow()
-
-                // 💾 データ管理（iCloud同期・バックアップ管理をまとめたグループ）
-                Section {
                     NavigationLink {
                         DataManagementGroupView()
                     } label: {
                         Label(s.dataManagementGroup, systemImage: "externaldrive")
                     }
-                } footer: {
-                    Text(s.dataManagementGroupFooter)
-                        .foregroundStyle(AppPalette.textOnSubpageSecondary)
-                }
-                .osmSettingsCardRow()
-
-                // プライバシー（一番下に配置）
-                Section {
-                    NavigationLink {
-                        PrivacyView()
-                    } label: {
-                        Label(PrivacyText.title(lang.language), systemImage: "hand.raised")
                     }
-                } footer: {
-                    Text(PrivacyText.linkFooter(lang.language))
-                        .foregroundStyle(AppPalette.textOnSubpageSecondary)
                 }
                 .osmSettingsCardRow()
 

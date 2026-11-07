@@ -686,7 +686,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.75;
+				MARKETING_VERSION = 1.78;
 				PRODUCT_BUNDLE_IDENTIFIER = com.osamushikubo.osmPod;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
@@ -720,7 +720,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.75;
+				MARKETING_VERSION = 1.78;
 				PRODUCT_BUNDLE_IDENTIFIER = com.osamushikubo.osmPod;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
@@ -745,7 +745,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.75;
+				MARKETING_VERSION = 1.78;
 				PRODUCT_BUNDLE_IDENTIFIER = com.osamushikubo.osmPod.ShareImport;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -770,7 +770,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.75;
+				MARKETING_VERSION = 1.78;
 				PRODUCT_BUNDLE_IDENTIFIER = com.osamushikubo.osmPod.ShareImport;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
