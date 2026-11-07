@@ -77,6 +77,7 @@ struct MainView: View {
             }
             .background(AppPalette.scene)
             .osmSceneStatusBar()
+            .osmSwipeBackToStartup()
             .searchable(
                 text: $searchText,
                 isPresented: $isSearchPresented,

@@ -195,6 +195,11 @@ struct OsmStartupGate<Content: View, Startup: View, Usage: View>: View {
         .onChange(of: link.opened) { _, opened in
             if opened { phase = .done }
         }
+        // ホームで左端から右へスワイプしたら戻る（設定がオンのときだけ）。
+        .onChange(of: link.startupRequest) { _, _ in
+            guard phase == .done, OsmStartupSettings.showStartup else { return }
+            phase = OsmStartupSettings.showUsage ? .usage : .startup
+        }
     }
 }
 
@@ -206,6 +211,13 @@ enum OsmStartupPhase { case startup, usage, done }
 final class OsmStartupLink {
     static let shared = OsmStartupLink()
     var opened = false
+
+    /// ホームからスタートアップへ戻る要求。増えるたびにゲートが戻す。
+    var startupRequest = 0
+
+    func requestStartup() {
+        startupRequest += 1
+    }
 }
 
 enum OsmStartupSettings {
@@ -527,5 +539,91 @@ final class OsmSwipeToCloseController: UIViewController, UIGestureRecognizerDele
             view = current.superview
         }
         return true
+    }
+}
+
+// MARK: - ホームから左端スワイプでスタートアップへ戻る（osm日日是好日と同じ）
+
+extension View {
+    /// ホームで左端から右へスワイプしたら、スタートアップ（使い方がオンなら使い方）へ戻す。
+    /// 設定の「スタートアップ画面」がオンのときだけ戻る。ホームの最前面に付ける。
+    func osmSwipeBackToStartup(isEnabled: Bool = true) -> some View {
+        background(OsmStartupEdgeSwipe(isEnabled: isEnabled))
+    }
+}
+
+private struct OsmStartupEdgeSwipe: UIViewRepresentable {
+    let isEnabled: Bool
+
+    func makeUIView(context: Context) -> OsmStartupEdgeSwipeView {
+        let view = OsmStartupEdgeSwipeView()
+        view.isSwipeEnabled = isEnabled
+        return view
+    }
+
+    func updateUIView(_ view: OsmStartupEdgeSwipeView, context: Context) {
+        view.isSwipeEnabled = isEnabled
+    }
+}
+
+/// ウィンドウに画面端スワイプの認識を付ける。タップやスクロール、ナビゲーションの
+/// 戻るスワイプとは同時に認識させ、どれも妨げない。
+final class OsmStartupEdgeSwipeView: UIView, UIGestureRecognizerDelegate {
+    var isSwipeEnabled = true
+
+    private lazy var recognizer: UIScreenEdgePanGestureRecognizer = {
+        let recognizer = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(handle(_:)))
+        recognizer.edges = .left
+        recognizer.cancelsTouchesInView = false
+        recognizer.delegate = self
+        return recognizer
+    }()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isUserInteractionEnabled = false
+        backgroundColor = .clear
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        recognizer.view?.removeGestureRecognizer(recognizer)
+        window?.addGestureRecognizer(recognizer)
+    }
+
+    @objc private func handle(_ recognizer: UIScreenEdgePanGestureRecognizer) {
+        guard recognizer.state == .ended, isSwipeEnabled, isHomeFrontmost else { return }
+        let translation = recognizer.translation(in: recognizer.view)
+        let velocity = recognizer.velocity(in: recognizer.view)
+        guard translation.x > 60 || velocity.x > 300 else { return }
+        OsmStartupLink.shared.requestStartup()
+    }
+
+    /// シート・全画面表示が出ていない、かつ画面を push していないときだけホームが最前面。
+    private var isHomeFrontmost: Bool {
+        guard let root = window?.rootViewController, root.presentedViewController == nil else {
+            return false
+        }
+        return !Self.hasPushedScreen(in: root)
+    }
+
+    private static func hasPushedScreen(in controller: UIViewController) -> Bool {
+        if let navigation = controller as? UINavigationController,
+           navigation.viewIfLoaded?.window != nil,
+           navigation.viewControllers.count > 1 {
+            return true
+        }
+        return controller.children.contains { hasPushedScreen(in: $0) }
+    }
+
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        true
     }
 }
