@@ -52,6 +52,9 @@ struct LocalizedStrings {
     var planManagementMenu: String { t("プラン管理", "Plan Management", "Quản lý gói") }
     var help: String { t("ヘルプ", "Help", "Trợ giúp") }
     var menuLabel: String { t("メニュー", "Menu", "Menu") }
+    /// […] のアイコンメニュー用の短いラベル。
+    var updateShowMetadataShort: String { t("番組情報を更新", "Update Shows", "Cập nhật") }
+    var addEpisodeToFolderShort: String { t("エピソード追加", "Add Episodes", "Thêm tập") }
     var randomModeLabel: String { t("ランダム再生", "Random Play", "Phát ngẫu nhiên") }
     var randomModeOn: String { t("ランダム再生オン", "Random Play On", "Phát ngẫu nhiên: Bật") }
     var randomModeOff: String { t("ランダム再生オフ", "Random Play Off", "Phát ngẫu nhiên: Tắt") }

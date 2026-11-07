@@ -39,6 +39,8 @@ struct MainView: View {
     @State private var isPresentingSettings = false
     @State private var isPresentingPlanManagement = false
     @State private var isPresentingHelp = false
+    @State private var isPresentingMoreMenu = false
+    @State private var moreButtonFrame: CGRect = .zero
     @State private var searchText = ""
     @State private var isSearchPresented = false
     @State private var searchResults: [Episode] = []
@@ -196,6 +198,13 @@ struct MainView: View {
                 CloudFilePreparationOverlay()
             }
         }
+        // シートではなくツールバーごと覆うので、NavigationStack の外に置く。
+        .overlay {
+            if isPresentingMoreMenu {
+                moreMenuOverlay(strings: s)
+                    .transition(.opacity)
+            }
+        }
     }
 
     private var shareImportSheetBinding: Binding<Bool> {
@@ -287,37 +296,13 @@ struct MainView: View {
                 }
                 .accessibilityLabel(audioPlayer.isRandomModeEnabled ? s.randomModeOn : s.randomModeOff)
                 LibrarySortToolbarMenu()
-                Menu {
-                    Button(s.updateShowMetadata, systemImage: "arrow.clockwise") {
-                        HapticManager.shared.provideFeedback()
-                        Task { @MainActor in
-                            await refreshShowLibrary(strings: s)
-                        }
-                    }
-                    .disabled(isRefreshingShowMetadata)
-                    Button(s.addShow, systemImage: "plus") {
-                        HapticManager.shared.provideFeedback()
-                        isPresentingAddShow = true
-                    }
-                    Button(s.createFolder, systemImage: "folder.badge.plus") {
-                        HapticManager.shared.provideFeedback()
-                        isPresentingCreateFolder = true
-                    }
-                    Button(s.addEpisodeToFolder, systemImage: "tray.and.arrow.down") {
-                        HapticManager.shared.provideFeedback()
-                        isPresentingEpisodeSearch = true
-                    }
-                    Button(s.settings, systemImage: "gearshape") {
-                        HapticManager.shared.provideFeedback()
-                        isPresentingSettings = true
-                    }
-                    Button(s.planManagementMenu, systemImage: "crown") {
-                        HapticManager.shared.provideFeedback()
-                        isPresentingPlanManagement = true
-                    }
-                    Button(s.help, systemImage: "questionmark.circle") {
-                        HapticManager.shared.provideFeedback()
-                        isPresentingHelp = true
+                Button {
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder),
+                        to: nil, from: nil, for: nil
+                    )
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        isPresentingMoreMenu = true
                     }
                 } label: {
                     Image(systemName: "ellipsis")
@@ -326,13 +311,89 @@ struct MainView: View {
                         .frame(width: 36, height: 36)
                 }
                 .accessibilityLabel(s.menuLabel)
-                .simultaneousGesture(TapGesture().onEnded {
-                    UIApplication.shared.sendAction(
-                        #selector(UIResponder.resignFirstResponder),
-                        to: nil, from: nil, for: nil
-                    )
-                })
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear
+                            .onAppear { moreButtonFrame = proxy.frame(in: .global) }
+                            .onChange(of: proxy.frame(in: .global)) { _, frame in
+                                moreButtonFrame = frame
+                            }
+                    }
+                }
             }
+    }
+
+    /// […] のアイコンメニュー。ボタンの下に右端を揃えて出し、外側のタップで閉じる。
+    private func moreMenuOverlay(strings s: LocalizedStrings) -> some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .topTrailing) {
+                Color.black.opacity(0.26)
+                    .contentShape(Rectangle())
+                    .onTapGesture { closeMoreMenu() }
+                    .accessibilityHidden(true)
+
+                MoreActionsMenu(
+                    items: moreMenuItems(strings: s),
+                    availableWidth: proxy.size.width - MoreActionsMenu.screenMargin * 2
+                )
+                .padding(.top, moreButtonFrame.maxY + 6)
+                .padding(.trailing, MoreActionsMenu.screenMargin)
+            }
+        }
+        .ignoresSafeArea()
+        .accessibilityAddTraits(.isModal)
+        .accessibilityAction(.escape) { closeMoreMenu() }
+    }
+
+    private func moreMenuItems(strings s: LocalizedStrings) -> [MoreActionsMenu.Item] {
+        [
+            .init(
+                systemImage: "arrow.clockwise",
+                title: s.updateShowMetadataShort,
+                accessibilityLabel: s.updateShowMetadata,
+                isEnabled: !isRefreshingShowMetadata
+            ) {
+                runMoreMenuAction {
+                    Task { @MainActor in
+                        await refreshShowLibrary(strings: s)
+                    }
+                }
+            },
+            .init(systemImage: "plus", title: s.addShow) {
+                runMoreMenuAction { isPresentingAddShow = true }
+            },
+            .init(systemImage: "folder.badge.plus", title: s.createFolder) {
+                runMoreMenuAction { isPresentingCreateFolder = true }
+            },
+            .init(
+                systemImage: "tray.and.arrow.down",
+                title: s.addEpisodeToFolderShort,
+                accessibilityLabel: s.addEpisodeToFolder
+            ) {
+                runMoreMenuAction { isPresentingEpisodeSearch = true }
+            },
+            .init(systemImage: "gearshape", title: s.settings) {
+                runMoreMenuAction { isPresentingSettings = true }
+            },
+            .init(systemImage: "crown", title: s.planManagementMenu) {
+                runMoreMenuAction { isPresentingPlanManagement = true }
+            },
+            .init(systemImage: "questionmark.circle", title: s.help) {
+                runMoreMenuAction { isPresentingHelp = true }
+            },
+        ]
+    }
+
+    private func closeMoreMenu() {
+        withAnimation(.easeOut(duration: 0.12)) {
+            isPresentingMoreMenu = false
+        }
+    }
+
+    private func runMoreMenuAction(_ action: () -> Void) {
+        HapticManager.shared.provideFeedback()
+        closeMoreMenu()
+        action()
     }
 
     @ViewBuilder
@@ -495,5 +556,88 @@ private struct EpisodeListFloatingJumpBar: View {
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
         .accessibilityLabel(accessibilityLabel)
+    }
+}
+
+/// 右上の […] から開くアイコン一覧メニュー（osm日日是好日の MoreActionsMenu と同じ見た目）。
+/// アイコンだけでは意味が伝わりにくいので、下に小さなラベルを付ける。
+private struct MoreActionsMenu: View {
+    struct Item: Identifiable {
+        let systemImage: String
+        let title: String
+        var accessibilityLabel: String?
+        var isEnabled = true
+        let action: () -> Void
+
+        var id: String { systemImage }
+    }
+
+    static let screenMargin: CGFloat = 12
+
+    let items: [Item]
+    /// 表示できる最大幅。表示倍率「拡大」の狭い端末でも画面内に収める。
+    let availableWidth: CGFloat
+
+    private let columnCount = 4
+    private let buttonSize: CGFloat = 40
+    private let iconSize: CGFloat = 20
+    private let iconGap: CGFloat = 6
+    private let horizontalPadding: CGFloat = 10
+    private let verticalPadding: CGFloat = 8
+    private let maxItemWidth: CGFloat = 72
+    /// 10pt のラベル 2 行分。行数が違っても段の高さを揃える。
+    private let labelHeight: CGFloat = 26
+
+    private var itemWidth: CGFloat {
+        let gaps = iconGap * CGFloat(columnCount - 1) + horizontalPadding * 2
+        return min(maxItemWidth, (availableWidth - gaps) / CGFloat(columnCount))
+    }
+
+    var body: some View {
+        let columns = Array(
+            repeating: GridItem(.fixed(itemWidth), spacing: iconGap),
+            count: columnCount
+        )
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 6) {
+            ForEach(items) { item in
+                itemButton(item)
+            }
+        }
+        .fixedSize()
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, verticalPadding)
+        .background(AppPalette.cardFill, in: RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 3)
+    }
+
+    private func itemButton(_ item: Item) -> some View {
+        Button(action: item.action) {
+            VStack(spacing: 3) {
+                Image(systemName: item.systemImage)
+                    .font(.system(size: iconSize))
+                    .foregroundStyle(AppPalette.textOnCardPrimary)
+                    .frame(width: buttonSize, height: buttonSize)
+                    .background(
+                        AppPalette.textOnCardSecondary.opacity(0.08),
+                        in: RoundedRectangle(cornerRadius: 10)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(AppPalette.cardBorder, lineWidth: 1)
+                    }
+                Text(item.title)
+                    .font(.system(size: 10))
+                    .foregroundStyle(AppPalette.textOnCardSecondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+                    .frame(width: itemWidth, height: labelHeight, alignment: .top)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!item.isEnabled)
+        .opacity(item.isEnabled ? 1 : 0.4)
+        .accessibilityLabel(item.accessibilityLabel ?? item.title)
     }
 }
