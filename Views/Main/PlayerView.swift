@@ -183,6 +183,7 @@ struct PlayerView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(lang.strings.close) { dismiss() }
                 }
+                .osmPlainBackground()
             }
             .overlay {
                 CloudFilePreparationOverlay()

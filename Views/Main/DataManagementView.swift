@@ -31,7 +31,10 @@ struct DataManagementView: View {
         List {
             Section {
                 NavigationLink {
-                    ShowManagementView()
+                    Group {
+                        ShowManagementView()
+                    }
+                    .osmSwipeToClose()
                 } label: {
                     Label(s.showManagementButton, systemImage: "rectangle.stack.badge.person.crop")
                 }

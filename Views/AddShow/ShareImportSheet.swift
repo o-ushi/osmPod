@@ -77,22 +77,30 @@ struct ShareImportSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button(s.close) {
-                        shareImport.clear()
-                        dismiss()
-                    }
-                    .disabled(isImporting)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    if isImporting {
-                        ProgressView()
-                    } else {
-                        Button(s.shareImportAdd) {
-                            Task { @MainActor in await importSelected(strings: s) }
+                    Group {
+                        Button(s.close) {
+                            shareImport.clear()
+                            dismiss()
                         }
-                        .disabled(selectedURLs.isEmpty)
+                        .disabled(isImporting)
                     }
+                    .tint(AppPalette.textOnSubpagePrimary)
                 }
+                .osmPlainBackground()
+                ToolbarItem(placement: .topBarTrailing) {
+                    Group {
+                        if isImporting {
+                            ProgressView()
+                        } else {
+                            Button(s.shareImportAdd) {
+                                Task { @MainActor in await importSelected(strings: s) }
+                            }
+                            .disabled(selectedURLs.isEmpty)
+                        }
+                    }
+                    .tint(AppPalette.textOnSubpagePrimary)
+                }
+                .osmPlainBackground()
             }
             .alert(s.error, isPresented: $showErrorAlert, presenting: errorMessage) { _ in
                 Button(s.ok, role: .cancel) {}

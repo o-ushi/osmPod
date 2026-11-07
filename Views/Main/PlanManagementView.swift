@@ -36,6 +36,7 @@ struct PlanManagementView: View {
                     }
                     .accessibilityLabel(s.close)
                 }
+                .osmPlainBackground()
             }
             .alert(s.planNoticeTitle, isPresented: Binding(
                 get: { alertMessage != nil },
