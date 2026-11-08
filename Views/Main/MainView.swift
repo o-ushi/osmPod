@@ -259,11 +259,13 @@ struct MainView: View {
     private var folderContent: some View {
         let s = lang.strings
         if rootFolders.isEmpty {
+            // 青の地に直接置くので白で書く（既定の灰色だと溶けて読めない）。
             ContentUnavailableView(
                 s.noFoldersYet,
                 systemImage: "folder",
                 description: Text(s.noFoldersDescription)
             )
+            .foregroundStyle(AppPalette.textOnScenePrimary)
         } else {
             ForEach(rootFolders) { folder in
                 GroupSectionView(folder: folder)
@@ -403,6 +405,7 @@ struct MainView: View {
         if searchResults.isEmpty {
             VStack(spacing: 16) {
                 ContentUnavailableView.search(text: searchText)
+                    .foregroundStyle(AppPalette.textOnScenePrimary)
                 // 0 件のときも、検索をやめて一覧へ戻れるようにする。
                 Button(s.searchClear) {
                     searchTask?.cancel()
@@ -421,7 +424,7 @@ struct MainView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(s.episodeCountLabel(searchResults.count))
                     .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppPalette.textOnSceneSecondary)
                     .padding(.leading, 16)
                 VStack(spacing: 0) {
                     ForEach(Array(searchResults.enumerated()), id: \.element.persistentModelID) { idx, episode in

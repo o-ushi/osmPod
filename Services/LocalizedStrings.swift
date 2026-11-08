@@ -123,6 +123,8 @@ struct LocalizedStrings {
     var helpTBackup1: String { t("「\(settings)」の「\(dataManagementGroup)」を開く", "Open \"\(dataManagementGroup)\" in \"\(settings)\"", "Mở \"\(dataManagementGroup)\" trong \"\(settings)\"") }
     var helpTPlanTitle: String { t("プランを確かめる", "Check your plan", "Kiểm tra gói") }
     var helpTPlan1: String { t("⋯ の「\(planManagementMenu)」をタップ", "Tap \"\(planManagementMenu)\" in ⋯", "Chạm \"\(planManagementMenu)\" trong ⋯") }
+    var waitingForConnection: String { t("接続待ち…電波の良い場所で再開します", "Waiting for connection… resumes when the signal returns", "Đang chờ kết nối… sẽ phát tiếp khi có sóng") }
+    var waitingForConnectionShort: String { t("接続待ち…", "Waiting for connection…", "Đang chờ kết nối…") }
     var searchClear: String { t("検索をやめる", "Clear search", "Xóa tìm kiếm") }
     var startupStart: String { t("はじめる", "Get started", "Bắt đầu") }
     var startupDontShowAgain: String { t("次回から表示しない", "Don't show again", "Không hiện lại") }

@@ -74,7 +74,13 @@ final class AudioPlayerService {
     /// として復帰ロジック（startNetworkRecoveryMonitor 等）にそのまま使うため変更せず、
     /// NowPlayingInfo の rate/playbackState 補正だけに使う。
     /// `NowPlayingSyncCoordinator` から参照するため internal。
-    @ObservationIgnored var isNetworkStalled = false
+    @ObservationIgnored var isNetworkStalled = false {
+        didSet { refreshWaitingIndicator() }
+    }
+    /// 再生しようとしているのに、通信が来なくて音が出ていない（画面に「接続待ち」を出す）。
+    /// 再生開始やシーク直後の短い読み込みでちらつかないよう、待ちが 3 秒続いたら立てる。
+    private(set) var isWaitingForConnection = false
+    @ObservationIgnored private var waitingIndicatorTask: Task<Void, Never>?
     /// 割り込み開始時点で再生していたか（手動停止後の誤った自動再開を防ぐ）。
     /// `NowPlayingSyncCoordinator` から参照するため internal。
     @ObservationIgnored nonisolated(unsafe) var wasPlayingAtInterruption = false
@@ -807,6 +813,7 @@ final class AudioPlayerService {
                     self.cancelWaitingStallWatchdog()
                     // 実際に音が流れ始めたので、ネットワーク復帰待ち中に補正していた表示をもとに戻す。
                     self.isNetworkStalled = false
+                    self.refreshWaitingIndicator()
                     if !self.isPlaying {
                         // isPlaying=false なのに AVPlayer が再生状態に遷移した（バッファ補充後の自動再開など）。
                         // 直ちに停止させないと iOS の自動 NowPlayingInfo 更新が rate=1 を書き続ける。
@@ -819,6 +826,7 @@ final class AudioPlayerService {
                 case .paused:
                     self.nowPlayingSync.logNowPlayingEvent("timeControl", trigger: "observer", extra: "status=paused error=\(errMsg)")
                     self.cancelWaitingStallWatchdog()
+                    self.refreshWaitingIndicator()
                     if self.isPlaying {
                         self.nowPlayingSync.warnNowPlayingMismatch("truth=playing,av.timeControl=paused error=\(errMsg)", event: "timeControl", trigger: "observer")
                     }
@@ -826,6 +834,7 @@ final class AudioPlayerService {
                     self.nowPlayingSync.applyNowPlayingInfo()
                 case .waitingToPlayAtSpecifiedRate:
                     self.nowPlayingSync.logNowPlayingEvent("timeControl", trigger: "observer", extra: "status=waiting reason=\(waitDesc)")
+                    self.refreshWaitingIndicator()
                     // バッファリング中も再生意図 (rate=1) を維持する。
                     // iOS がこの状態を見て rate=0 を NowPlayingInfo に書くことがあるため即座に上書きする。
                     if self.isPlaying {
@@ -856,6 +865,39 @@ final class AudioPlayerService {
                 self.nowPlayingSync.scheduleNowPlayingReassert()
             }
         }
+    }
+
+    /// 「接続待ち」の表示を今の状態に合わせる。止めた・鳴り始めたらすぐ消す。
+    private func refreshWaitingIndicator() {
+        guard isPlaying else {
+            setWaitingForConnection(false)
+            return
+        }
+        if isNetworkStalled {
+            setWaitingForConnection(true)
+            return
+        }
+        guard player?.timeControlStatus == .waitingToPlayAtSpecifiedRate else {
+            setWaitingForConnection(false)
+            return
+        }
+        guard !isWaitingForConnection, waitingIndicatorTask == nil else { return }
+        waitingIndicatorTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard let self, !Task.isCancelled else { return }
+            self.waitingIndicatorTask = nil
+            if self.isPlaying, self.player?.timeControlStatus == .waitingToPlayAtSpecifiedRate {
+                self.isWaitingForConnection = true
+            }
+        }
+    }
+
+    private func setWaitingForConnection(_ value: Bool) {
+        if !value {
+            waitingIndicatorTask?.cancel()
+            waitingIndicatorTask = nil
+        }
+        if isWaitingForConnection != value { isWaitingForConnection = value }
     }
 
     private func removeTimeControlObserver() {
