@@ -35,6 +35,7 @@ struct AddEpisodeToGroupSheet: View {
                         Image(systemName: "checkmark")
                     }
                 }
+                .osmPlainBackground()
             }
         }
     }

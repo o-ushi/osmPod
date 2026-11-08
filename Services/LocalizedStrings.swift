@@ -52,6 +52,9 @@ struct LocalizedStrings {
     var planManagementMenu: String { t("プラン管理", "Plan Management", "Quản lý gói") }
     var help: String { t("ヘルプ", "Help", "Trợ giúp") }
     var menuLabel: String { t("メニュー", "Menu", "Menu") }
+    /// […] のアイコンメニュー用の短いラベル。
+    var updateShowMetadataShort: String { t("番組情報を更新", "Update Shows", "Cập nhật") }
+    var addEpisodeToFolderShort: String { t("エピソード追加", "Add Episodes", "Thêm tập") }
     var randomModeLabel: String { t("ランダム再生", "Random Play", "Phát ngẫu nhiên") }
     var randomModeOn: String { t("ランダム再生オン", "Random Play On", "Phát ngẫu nhiên: Bật") }
     var randomModeOff: String { t("ランダム再生オフ", "Random Play Off", "Phát ngẫu nhiên: Tắt") }
@@ -111,7 +114,7 @@ struct LocalizedStrings {
     var helpTPlayTitle: String { t("再生画面を開く", "Open the player", "Mở trình phát") }
     var helpTPlay1: String { t("再生中に画面下のミニプレーヤーをタップ", "While playing, tap the mini player at the bottom", "Khi đang phát, chạm trình phát mini ở dưới cùng") }
     var helpTRandomTitle: String { t("おまかせで再生する", "Play at random", "Phát ngẫu nhiên") }
-    var helpTRandom1: String { t("タスクバーのシャッフルをタップ", "Tap shuffle in the task bar", "Chạm trộn bài trên thanh tác vụ") }
+    var helpTRandom1: String { t("ヘッダーのシャッフルをタップ", "Tap shuffle in the header", "Chạm trộn bài ở đầu màn hình") }
     var helpTRandom2: String { t("除く番組は再生オプションで選ぶ", "Choose excluded shows in the playback options", "Chọn chương trình loại trừ trong tùy chọn phát") }
     var helpTShakeTitle: String { t("聞き直す", "Listen again", "Nghe lại") }
     var helpTShake1: String { t("端末を振ると巻き戻す", "Shake the device to rewind", "Lắc máy để tua lại") }
@@ -120,6 +123,22 @@ struct LocalizedStrings {
     var helpTBackup1: String { t("「\(settings)」の「\(dataManagementGroup)」を開く", "Open \"\(dataManagementGroup)\" in \"\(settings)\"", "Mở \"\(dataManagementGroup)\" trong \"\(settings)\"") }
     var helpTPlanTitle: String { t("プランを確かめる", "Check your plan", "Kiểm tra gói") }
     var helpTPlan1: String { t("⋯ の「\(planManagementMenu)」をタップ", "Tap \"\(planManagementMenu)\" in ⋯", "Chạm \"\(planManagementMenu)\" trong ⋯") }
+    var waitingForConnection: String { t("接続待ち…電波の良い場所で再開します", "Waiting for connection… resumes when the signal returns", "Đang chờ kết nối… sẽ phát tiếp khi có sóng") }
+    var waitingForConnectionShort: String { t("接続待ち…", "Waiting for connection…", "Đang chờ kết nối…") }
+    var searchClear: String { t("検索をやめる", "Clear search", "Xóa tìm kiếm") }
+    var startupStart: String { t("はじめる", "Get started", "Bắt đầu") }
+    var startupDontShowAgain: String { t("次回から表示しない", "Don't show again", "Không hiện lại") }
+    var startupSettingsGroup: String { t("案内", "Guides", "Hướng dẫn") }
+    var startupSetting: String { t("スタートアップ画面", "Startup screen", "Màn hình khởi động") }
+    var usageSetting: String { t("使い方画面", "How-to screen", "Màn hình cách dùng") }
+    var usageTitle: String { t("使い方", "How to use", "Cách dùng") }
+    var usageGoHome: String { t("ホーム画面へ", "Go to Home", "Về màn hình chính") }
+    var usageCopyBody: String { t(
+        "Google の AI モードで答えが出たら、画面の下のほうにあるコピーボタンをタップしてください。下の画像の赤い矢印と TAP! が指している、左端の重なった2つの四角です。\n\nコピーできたら osmPod に戻り、「クリップボードを読み取る」を押してください。",
+        "When Google's AI Mode shows an answer, tap the Copy button near the bottom of the screen — the leftmost icon of two overlapping squares, marked TAP! with a red arrow.\n\nAfter copying, come back to osmPod and tap \"Read Clipboard\".",
+        "Khi AI Mode của Google hiện câu trả lời, hãy chạm nút Sao chép ở phía dưới màn hình — biểu tượng ngoài cùng bên trái gồm hai hình vuông chồng lên nhau, có mũi tên đỏ và chữ TAP!.\n\nSau khi sao chép, hãy quay lại osmPod và chạm \"Đọc clipboard\"."
+    ) }
+    var usageCopyImageLabel: String { t("AIモードのコピーボタン（赤い矢印と TAP!）", "Copy button in AI Mode (red arrow and TAP!)", "Nút sao chép trong AI Mode (mũi tên đỏ và TAP!)") }
     var helpIntro: String { t("ポッドキャストをひとつのライブラリで聴くアプリです。", "Listen to your podcasts in one library.", "Nghe podcast trong một thư viện.") }
     var settingsGroupDisplay: String { t("表示と操作", "Display and controls", "Hiển thị và thao tác") }
     var settingsGroupPlayback: String { t("再生とデータ", "Playback and data", "Phát và dữ liệu") }

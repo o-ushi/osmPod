@@ -127,6 +127,15 @@ struct PlayerView: View {
                         }
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        // 再生中なのに通信が来ず音が出ていないとき。
+                        if audioPlayer.isWaitingForConnection {
+                            Label(lang.strings.waitingForConnection, systemImage: "wifi.exclamationmark")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.orange)
+                                .multilineTextAlignment(.center)
+                                .padding(.top, 4)
+                                .accessibilityIdentifier("waiting-for-connection")
+                        }
                     }
                     .padding(.horizontal, 24)
 
@@ -183,6 +192,7 @@ struct PlayerView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(lang.strings.close) { dismiss() }
                 }
+                .osmPlainBackground()
             }
             .overlay {
                 CloudFilePreparationOverlay()
@@ -280,6 +290,7 @@ struct PlayerView: View {
 
 struct MiniPlayerView: View {
     @Environment(AudioPlayerService.self) private var audioPlayer
+    @Environment(LanguageSettings.self) private var lang
     let onTap: () -> Void
 
     var body: some View {
@@ -301,10 +312,18 @@ struct MiniPlayerView: View {
                             .font(.subheadline.weight(.medium))
                             .lineLimit(1)
                             .foregroundStyle(.primary)
-                        Text(audioPlayer.currentEpisode?.show.title ?? "")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                        if audioPlayer.isWaitingForConnection {
+                            // 番組名の代わりに、通信を待っていて音が出ていないことを出す。
+                            Label(lang.strings.waitingForConnectionShort, systemImage: "wifi.exclamationmark")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.orange)
+                                .lineLimit(1)
+                        } else {
+                            Text(audioPlayer.currentEpisode?.show.title ?? "")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
                     }
                 }
             }
