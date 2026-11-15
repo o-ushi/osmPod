@@ -582,29 +582,12 @@ final class AudioPlayerService {
         // Dropbox 等のクラウドストレージの場合は File Provider のデータ取得待ちが必要。
         // url.isFileURL が true でも即時再生モードにすると即座に失敗するため、
         // ストリーミングと同様に automaticallyWaitsToMinimizeStalling を有効にする。
-        let isLocalFile = url.isFileURL && !isBookmarkedLocal
-        let item = makePlayerItem(url: url, isLocalFile: isLocalFile)
-        let newPlayer = AVPlayer(playerItem: item)
-        newPlayer.allowsExternalPlayback = false
-        // ストリーミングはバッファ待ちを有効にして切れ欠けノイズを抑える。ローカルは即時再生。
-        newPlayer.automaticallyWaitsToMinimizeStalling = !isLocalFile
-        player = newPlayer
-        nowPlayingSync.attachPlayer(newPlayer)
-
-        attachPeriodicTimeObserver(generation: generation)
-        attachEndObserver(for: item)
-        attachStalledObserver(for: item)
-        attachTimeControlObserver()
-        attachItemStatusObserver(for: item)
-
-        Task { [weak self] in
-            await self?.loadDurationFromAssetIfNeeded(generation: generation)
-        }
-
-        if episode.playbackPosition > 0 {
-            let t = CMTime(seconds: episode.playbackPosition, preferredTimescale: 600)
-            player?.seek(to: t, toleranceBefore: .zero, toleranceAfter: .zero)
-        }
+        installPlayer(
+            url: url,
+            episode: episode,
+            isBookmarkedLocal: isBookmarkedLocal,
+            generation: generation
+        )
 
         guard autoPlay else {
             isPlaying = false
@@ -1903,7 +1886,9 @@ final class AudioPlayerService {
         )
     }
 
-    private func installRestoredPlayer(
+    /// 新しい AVPlayer を作り、監視を付け、保存された位置へ移す（再生の開始と、前回の復元で共通）。
+    /// ここに監視を足せば、どちらの経路にも効く。
+    private func installPlayer(
         url: URL,
         episode: Episode,
         isBookmarkedLocal: Bool,
@@ -1913,6 +1898,7 @@ final class AudioPlayerService {
         let item = makePlayerItem(url: url, isLocalFile: isLocalFile)
         let newPlayer = AVPlayer(playerItem: item)
         newPlayer.allowsExternalPlayback = false
+        // ストリーミングはバッファ待ちを有効にして切れ欠けノイズを抑える。ローカルは即時再生。
         newPlayer.automaticallyWaitsToMinimizeStalling = !isLocalFile
         player = newPlayer
         nowPlayingSync.attachPlayer(newPlayer)
@@ -1931,6 +1917,20 @@ final class AudioPlayerService {
             let t = CMTime(seconds: episode.playbackPosition, preferredTimescale: 600)
             player?.seek(to: t, toleranceBefore: .zero, toleranceAfter: .zero)
         }
+    }
+
+    private func installRestoredPlayer(
+        url: URL,
+        episode: Episode,
+        isBookmarkedLocal: Bool,
+        generation: Int
+    ) {
+        installPlayer(
+            url: url,
+            episode: episode,
+            isBookmarkedLocal: isBookmarkedLocal,
+            generation: generation
+        )
 
         isPlaying = false
         syncPlaybackChrome(liveTime: currentTime)
