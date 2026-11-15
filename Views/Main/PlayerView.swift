@@ -127,14 +127,32 @@ struct PlayerView: View {
                         }
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        // 再生中なのに通信が来ず音が出ていないとき。
+                        // 再生中なのに通信が来ず音が出ていないとき。配信元が遅いと分かればそう出す。
                         if audioPlayer.isWaitingForConnection {
-                            Label(lang.strings.waitingForConnection, systemImage: "wifi.exclamationmark")
+                            Label(
+                                audioPlayer.isSourceSlow
+                                    ? lang.strings.sourceSlow
+                                    : lang.strings.waitingForConnection,
+                                systemImage: audioPlayer.isSourceSlow ? "tortoise" : "wifi.exclamationmark"
+                            )
                                 .font(.footnote.weight(.semibold))
                                 .foregroundStyle(.orange)
                                 .multilineTextAlignment(.center)
                                 .padding(.top, 4)
                                 .accessibilityIdentifier("waiting-for-connection")
+                        } else if !audioPlayer.isPlaying, let notice = audioPlayer.playbackNotice {
+                            // 読み込めないまま限度を超えて自動で止めたとき。
+                            Label(
+                                notice == .sourceTooSlow
+                                    ? lang.strings.playbackStoppedSlow
+                                    : lang.strings.playbackStoppedStalled,
+                                systemImage: "exclamationmark.triangle"
+                            )
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.orange)
+                                .multilineTextAlignment(.center)
+                                .padding(.top, 4)
+                                .accessibilityIdentifier("playback-stopped-notice")
                         }
                     }
                     .padding(.horizontal, 24)
@@ -314,7 +332,23 @@ struct MiniPlayerView: View {
                             .foregroundStyle(.primary)
                         if audioPlayer.isWaitingForConnection {
                             // 番組名の代わりに、通信を待っていて音が出ていないことを出す。
-                            Label(lang.strings.waitingForConnectionShort, systemImage: "wifi.exclamationmark")
+                            Label(
+                                audioPlayer.isSourceSlow
+                                    ? lang.strings.sourceSlowShort
+                                    : lang.strings.waitingForConnectionShort,
+                                systemImage: audioPlayer.isSourceSlow ? "tortoise" : "wifi.exclamationmark"
+                            )
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.orange)
+                                .lineLimit(1)
+                        } else if !audioPlayer.isPlaying, let notice = audioPlayer.playbackNotice {
+                            // 読み込めずに自動で止めたことを、番組名の代わりに出す。
+                            Label(
+                                notice == .sourceTooSlow
+                                    ? lang.strings.playbackStoppedSlowShort
+                                    : lang.strings.playbackStoppedStalledShort,
+                                systemImage: "exclamationmark.triangle"
+                            )
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.orange)
                                 .lineLimit(1)

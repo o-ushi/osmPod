@@ -119,12 +119,22 @@ struct LocalizedStrings {
     var helpTShakeTitle: String { t("聞き直す", "Listen again", "Nghe lại") }
     var helpTShake1: String { t("端末を振ると巻き戻す", "Shake the device to rewind", "Lắc máy để tua lại") }
     var helpTShake2: String { t("秒数は再生オプションで選ぶ", "Choose the seconds in the playback options", "Chọn số giây trong tùy chọn phát") }
+    var helpTStallTitle: String { t("再生が始まらないとき", "If playback doesn't start", "Khi không phát được") }
+    var helpTStall1: String { t("「\(waitingForConnectionShort)」：電波が戻ると、自動で読み込み直して再生します", "\"\(waitingForConnectionShort)\": osmPod reloads and resumes automatically when the signal returns", "\"\(waitingForConnectionShort)\": osmPod tự tải lại và phát tiếp khi có sóng") }
+    var helpTStall2: String { t("「\(sourceSlowShort)」（亀のアイコン）：番組の配信元からの読み込みが遅い状態です。エピソードをダウンロードしてから聞くと確実です", "\"\(sourceSlowShort)\" (tortoise icon): the podcast's server is sending audio slowly. Download the episode first to play it reliably", "\"\(sourceSlowShort)\" (biểu tượng con rùa): máy chủ của podcast gửi âm thanh chậm. Tải tập về trước để phát ổn định") }
+    var helpTStall3: String { t("しばらくしても再生できないときは停止して、画面に理由を表示します。▶︎ でもう一度試せます", "If it still can't play after a while, playback stops and the reason is shown. Tap ▶︎ to try again", "Nếu vẫn không phát được sau một lúc, ứng dụng sẽ dừng và hiện lý do. Chạm ▶︎ để thử lại") }
     var helpTBackupTitle: String { t("ライブラリを書き出す・取り込む", "Export or import your library", "Xuất hoặc nhập thư viện") }
     var helpTBackup1: String { t("「\(settings)」の「\(dataManagementGroup)」を開く", "Open \"\(dataManagementGroup)\" in \"\(settings)\"", "Mở \"\(dataManagementGroup)\" trong \"\(settings)\"") }
     var helpTPlanTitle: String { t("プランを確かめる", "Check your plan", "Kiểm tra gói") }
     var helpTPlan1: String { t("⋯ の「\(planManagementMenu)」をタップ", "Tap \"\(planManagementMenu)\" in ⋯", "Chạm \"\(planManagementMenu)\" trong ⋯") }
     var waitingForConnection: String { t("接続待ち…電波の良い場所で再開します", "Waiting for connection… resumes when the signal returns", "Đang chờ kết nối… sẽ phát tiếp khi có sóng") }
     var waitingForConnectionShort: String { t("接続待ち…", "Waiting for connection…", "Đang chờ kết nối…") }
+    var sourceSlow: String { t("配信元からの読み込みが遅いようです。ダウンロードしてから聞くと確実です", "The podcast's server is sending audio slowly. Downloading the episode first is more reliable.", "Máy chủ của podcast đang gửi âm thanh chậm. Tải tập về trước sẽ ổn định hơn.") }
+    var sourceSlowShort: String { t("配信元が遅い…", "Server is slow…", "Máy chủ chậm…") }
+    var playbackStoppedStalled: String { t("音声を読み込めないため停止しました。少し時間をおくか、ダウンロードしてからお試しください", "Stopped because the audio couldn't be loaded. Try again later, or download the episode first.", "Đã dừng vì không tải được âm thanh. Hãy thử lại sau hoặc tải tập về trước.") }
+    var playbackStoppedStalledShort: String { t("読み込めず停止", "Stopped: couldn't load", "Đã dừng: không tải được") }
+    var playbackStoppedSlow: String { t("配信元からの読み込みが遅すぎるため停止しました。ダウンロードしてから聞くと確実です", "Stopped because the podcast's server is too slow. Downloading the episode first is more reliable.", "Đã dừng vì máy chủ của podcast quá chậm. Tải tập về trước sẽ ổn định hơn.") }
+    var playbackStoppedSlowShort: String { t("配信元が遅く停止", "Stopped: server too slow", "Đã dừng: máy chủ quá chậm") }
     var searchClear: String { t("検索をやめる", "Clear search", "Xóa tìm kiếm") }
     var startupStart: String { t("はじめる", "Get started", "Bắt đầu") }
     var startupDontShowAgain: String { t("次回から表示しない", "Don't show again", "Không hiện lại") }

@@ -81,6 +81,9 @@ struct HelpView: View {
                     OsmDisclosureRow(title: s.helpTShakeTitle, systemImage: "iphone.radiowaves.left.and.right", accent: .blue) {
                         OsmStepList(steps: [s.helpTShake1, s.helpTShake2], accent: .blue)
                     }
+                    OsmDisclosureRow(title: s.helpTStallTitle, systemImage: "wifi.exclamationmark", accent: .blue) {
+                        OsmStepList(steps: [s.helpTStall1, s.helpTStall2, s.helpTStall3], accent: .blue)
+                    }
                 }
                 .osmSettingsCardRow()
 
