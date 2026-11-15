@@ -60,9 +60,13 @@ struct PodcastShowPreviewSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button(s.close) { dismiss() }
-                        .disabled(isSaving)
+                    Group {
+                        Button(s.close) { dismiss() }
+                            .disabled(isSaving)
+                    }
+                    .tint(AppPalette.textOnSubpagePrimary)
                 }
+                .osmPlainBackground()
             }
             .safeAreaInset(edge: .bottom) {
                 actionBar(strings: s)

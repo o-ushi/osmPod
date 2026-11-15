@@ -22,6 +22,14 @@ final class PlaybackChromeState {
     fileprivate(set) var liveDisplayTime: TimeInterval = 0
 }
 
+/// 読み込みが止まったまま再生できず、自動で止めたときの知らせ。
+enum PlaybackNotice: Equatable {
+    /// 何度読み込み直しても音声が届かなかった。
+    case stalledGaveUp
+    /// 配信元からの転送が再生に必要な速さを大きく下回り、待っても流れなかった。
+    case sourceTooSlow
+}
+
 enum PlaybackQueueContext: Equatable {
     case none
     case folder(PersistentIdentifier)
@@ -74,7 +82,37 @@ final class AudioPlayerService {
     /// として復帰ロジック（startNetworkRecoveryMonitor 等）にそのまま使うため変更せず、
     /// NowPlayingInfo の rate/playbackState 補正だけに使う。
     /// `NowPlayingSyncCoordinator` から参照するため internal。
-    @ObservationIgnored var isNetworkStalled = false
+    @ObservationIgnored var isNetworkStalled = false {
+        didSet { refreshWaitingIndicator() }
+    }
+    /// 再生しようとしているのに、通信が来なくて音が出ていない（画面に「接続待ち」を出す）。
+    /// 再生開始やシーク直後の短い読み込みでちらつかないよう、待ちが 3 秒続いたら立てる。
+    private(set) var isWaitingForConnection = false
+    @ObservationIgnored private var waitingIndicatorTask: Task<Void, Never>?
+    /// 音が届かず読み込み直した回数。実際に流れ始めたら 0 に戻す。
+    @ObservationIgnored private var stallRetryCount = 0
+    /// この回数読み込み直しても流れなければ、止めて知らせる。
+    private static let maxStallRetries = 4
+    /// 待ちを見張る時間。読み込み直すたびに延ばす（同じ間隔で連打しない）。
+    private static let stallRetryTimeouts: [TimeInterval] = [15, 20, 30, 45, 60]
+    /// 配信元が遅いとき、音が出ないままこれだけ待ったら止める。
+    private static let slowSourceGiveUpAfter: TimeInterval = 180
+    /// 配信元が遅いときの見張りの間隔（読み込み直さず、速さだけ測り直す）。
+    private static let slowSourceRecheckInterval: TimeInterval = 30
+    /// 配信元からの転送が、再生に必要な速さを大きく下回っている。
+    /// このときは読み込み直しても速くならない（読み込み済みの分を捨てるぶん不利）ので、待ち続ける。
+    private(set) var isSourceSlow = false
+    /// 配信元が遅いと分かってから、音が出ないまま待っている起点。
+    @ObservationIgnored private var slowWaitStartedUptime: TimeInterval?
+    /// 再生に必要な速さ（bit/s）。音声トラックの見積もりから読む。
+    /// MP3 では見積もりが 0（不明）のことが多いので、そのときは控えめに 64kbps とみなす
+    /// （明らかに遅い配信元だけを「遅い」と判断するため）。
+    @ObservationIgnored private var requiredBitrate: Double?
+    private static let fallbackRequiredBitrate: Double = 64_000
+    /// 今の AVPlayerItem を作った時刻。届いたバイト数から速さを割り出すときの起点。
+    @ObservationIgnored private var currentItemStartedUptime: TimeInterval = 0
+    /// 読み込めずに自動で止めたときの知らせ。次に再生を始めたら消す。
+    private(set) var playbackNotice: PlaybackNotice?
     /// 割り込み開始時点で再生していたか（手動停止後の誤った自動再開を防ぐ）。
     /// `NowPlayingSyncCoordinator` から参照するため internal。
     @ObservationIgnored nonisolated(unsafe) var wasPlayingAtInterruption = false
@@ -210,6 +248,9 @@ final class AudioPlayerService {
         currentTime = episode.playbackPosition
         duration = episode.totalDuration
         didReachPlaybackEnd = false
+        resetStallTracking()
+        requiredBitrate = nil
+        playbackNotice = nil
         episode.clearNewIndicator()
         if !isInBackground { try? context.save() }
 
@@ -272,6 +313,8 @@ final class AudioPlayerService {
         }
         guard let player, !isPlaying else { return }
         nowPlayingSync.logNowPlayingEvent("resumePlayback", trigger: trigger, extra: "phase=enter")
+        resetStallTracking()
+        playbackNotice = nil
         preparePlaybackAudioSession()
         currentEpisode?.clearNewIndicator()
         if didReachPlaybackEnd {
@@ -539,29 +582,12 @@ final class AudioPlayerService {
         // Dropbox 等のクラウドストレージの場合は File Provider のデータ取得待ちが必要。
         // url.isFileURL が true でも即時再生モードにすると即座に失敗するため、
         // ストリーミングと同様に automaticallyWaitsToMinimizeStalling を有効にする。
-        let isLocalFile = url.isFileURL && !isBookmarkedLocal
-        let item = makePlayerItem(url: url, isLocalFile: isLocalFile)
-        let newPlayer = AVPlayer(playerItem: item)
-        newPlayer.allowsExternalPlayback = false
-        // ストリーミングはバッファ待ちを有効にして切れ欠けノイズを抑える。ローカルは即時再生。
-        newPlayer.automaticallyWaitsToMinimizeStalling = !isLocalFile
-        player = newPlayer
-        nowPlayingSync.attachPlayer(newPlayer)
-
-        attachPeriodicTimeObserver(generation: generation)
-        attachEndObserver(for: item)
-        attachStalledObserver(for: item)
-        attachTimeControlObserver()
-        attachItemStatusObserver(for: item)
-
-        Task { [weak self] in
-            await self?.loadDurationFromAssetIfNeeded(generation: generation)
-        }
-
-        if episode.playbackPosition > 0 {
-            let t = CMTime(seconds: episode.playbackPosition, preferredTimescale: 600)
-            player?.seek(to: t, toleranceBefore: .zero, toleranceAfter: .zero)
-        }
+        installPlayer(
+            url: url,
+            episode: episode,
+            isBookmarkedLocal: isBookmarkedLocal,
+            generation: generation
+        )
 
         guard autoPlay else {
             isPlaying = false
@@ -587,6 +613,7 @@ final class AudioPlayerService {
     }
 
     private func makePlayerItem(url: URL, isLocalFile: Bool) -> AVPlayerItem {
+        currentItemStartedUptime = ProcessInfo.processInfo.systemUptime
         let asset = AVURLAsset(url: url)
         let item = AVPlayerItem(asset: asset)
         if !isLocalFile {
@@ -804,9 +831,12 @@ final class AudioPlayerService {
                 switch status {
                 case .playing:
                     self.nowPlayingSync.logNowPlayingEvent("timeControl", trigger: "observer", extra: "status=playing")
-                    self.cancelWaitingStallWatchdog()
+                    // 実際に音が流れ始めたので、読み込み直しの回数と「配信元が遅い」をいったん戻す。
+                    // 遅いままなら次の待ちでまた測って分かる。
+                    self.resetStallTracking()
                     // 実際に音が流れ始めたので、ネットワーク復帰待ち中に補正していた表示をもとに戻す。
                     self.isNetworkStalled = false
+                    self.refreshWaitingIndicator()
                     if !self.isPlaying {
                         // isPlaying=false なのに AVPlayer が再生状態に遷移した（バッファ補充後の自動再開など）。
                         // 直ちに停止させないと iOS の自動 NowPlayingInfo 更新が rate=1 を書き続ける。
@@ -818,7 +848,14 @@ final class AudioPlayerService {
                     self.nowPlayingSync.applyNowPlayingInfo()
                 case .paused:
                     self.nowPlayingSync.logNowPlayingEvent("timeControl", trigger: "observer", extra: "status=paused error=\(errMsg)")
-                    self.cancelWaitingStallWatchdog()
+                    if self.isPlaying {
+                        // 再生するつもりなのに止まっている（読み込み直しの途中で seek が終わらない等）。
+                        // ここで見張りを外すと、そのまま固まるので続ける。
+                        self.scheduleWaitingStallWatchdogIfNeeded()
+                    } else {
+                        self.cancelWaitingStallWatchdog()
+                    }
+                    self.refreshWaitingIndicator()
                     if self.isPlaying {
                         self.nowPlayingSync.warnNowPlayingMismatch("truth=playing,av.timeControl=paused error=\(errMsg)", event: "timeControl", trigger: "observer")
                     }
@@ -826,6 +863,7 @@ final class AudioPlayerService {
                     self.nowPlayingSync.applyNowPlayingInfo()
                 case .waitingToPlayAtSpecifiedRate:
                     self.nowPlayingSync.logNowPlayingEvent("timeControl", trigger: "observer", extra: "status=waiting reason=\(waitDesc)")
+                    self.refreshWaitingIndicator()
                     // バッファリング中も再生意図 (rate=1) を維持する。
                     // iOS がこの状態を見て rate=0 を NowPlayingInfo に書くことがあるため即座に上書きする。
                     if self.isPlaying {
@@ -858,6 +896,39 @@ final class AudioPlayerService {
         }
     }
 
+    /// 「接続待ち」の表示を今の状態に合わせる。止めた・鳴り始めたらすぐ消す。
+    private func refreshWaitingIndicator() {
+        guard isPlaying else {
+            setWaitingForConnection(false)
+            return
+        }
+        if isNetworkStalled {
+            setWaitingForConnection(true)
+            return
+        }
+        guard player?.timeControlStatus == .waitingToPlayAtSpecifiedRate else {
+            setWaitingForConnection(false)
+            return
+        }
+        guard !isWaitingForConnection, waitingIndicatorTask == nil else { return }
+        waitingIndicatorTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard let self, !Task.isCancelled else { return }
+            self.waitingIndicatorTask = nil
+            if self.isPlaying, self.player?.timeControlStatus == .waitingToPlayAtSpecifiedRate {
+                self.isWaitingForConnection = true
+            }
+        }
+    }
+
+    private func setWaitingForConnection(_ value: Bool) {
+        if !value {
+            waitingIndicatorTask?.cancel()
+            waitingIndicatorTask = nil
+        }
+        if isWaitingForConnection != value { isWaitingForConnection = value }
+    }
+
     private func removeTimeControlObserver() {
         timeControlObserver?.invalidate()
         timeControlObserver = nil
@@ -866,19 +937,21 @@ final class AudioPlayerService {
         cancelWaitingStallWatchdog()
     }
 
-    /// `.waitingToPlayAtSpecifiedRate` に入るたびに呼ばれる。既に監視中なら何もしない
-    /// （waiting イベントは同一状態のまま何度も発火し得るため、都度タイマーを延長しない）。
-    private func scheduleWaitingStallWatchdogIfNeeded(timeout: TimeInterval = 15) {
+    /// 音が出ないままの待ちを見張る。既に見張っていれば何もしない
+    /// （waiting イベントは同じ状態のまま何度も届くため、そのたびに延長しない）。
+    /// 読み込み直したあとは状態が「待ち」のまま変わらず KVO が来ないことがあるので、
+    /// 読み込み直しの側からも直接呼んで見張りを続ける。
+    private func scheduleWaitingStallWatchdogIfNeeded(timeout: TimeInterval? = nil) {
         guard waitingStallWatchdogTask == nil else { return }
+        let index = min(stallRetryCount, Self.stallRetryTimeouts.count - 1)
+        let wait = timeout ?? Self.stallRetryTimeouts[index]
         waitingStallWatchdogTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(timeout))
+            try? await Task.sleep(for: .seconds(wait))
             guard let self, !Task.isCancelled else { return }
             self.waitingStallWatchdogTask = nil
-            guard self.isPlaying, self.player?.timeControlStatus == .waitingToPlayAtSpecifiedRate else { return }
-            bgLog.warning("⚠️ waiting-stall: stuck in waitingToPlayAtSpecifiedRate for \(timeout)s — treating as stall")
-            self.isNetworkStalled = true
-            self.nowPlayingSync.applyNowPlayingInfo()
-            self.handlePlaybackStall()
+            // 読み込み直しの直後は .paused のこともあるので、「流れていない」で判断する。
+            guard self.isPlaying, self.player?.timeControlStatus != .playing else { return }
+            self.handleWaitingTimeout(after: wait)
         }
     }
 
@@ -887,14 +960,90 @@ final class AudioPlayerService {
         waitingStallWatchdogTask = nil
     }
 
+    /// 読み込み直しの回数・「配信元が遅い」・見張りを最初の状態に戻す。
+    private func resetStallTracking() {
+        stallRetryCount = 0
+        slowWaitStartedUptime = nil
+        isSourceSlow = false
+        cancelWaitingStallWatchdog()
+    }
+
+    /// 音が出ないまま [wait] 秒たったときの判断。
+    /// - 配信元が遅いだけなら、読み込み直さずに待ち続ける（画面に「配信元が遅い」を出す）。
+    /// - そうでなければ、間隔を延ばしながら読み込み直す。
+    /// - どちらも限度を超えたら、止めて知らせる（「接続待ち…」のまま放置しない）。
+    private func handleWaitingTimeout(after wait: TimeInterval) {
+        isNetworkStalled = true
+        nowPlayingSync.applyNowPlayingInfo()
+
+        if let rates = measuredTransferRates(), rates.observed < rates.required * 0.8 {
+            let now = ProcessInfo.processInfo.systemUptime
+            if !isSourceSlow {
+                bgLog.warning("🐢 slow source: observed=\(Int(rates.observed / 1000))kbps required=\(Int(rates.required / 1000))kbps — waiting without reload")
+            }
+            isSourceSlow = true
+            let startedAt = slowWaitStartedUptime ?? (now - wait)
+            slowWaitStartedUptime = startedAt
+            if now - startedAt >= Self.slowSourceGiveUpAfter {
+                giveUpStalledPlayback(notice: .sourceTooSlow)
+                return
+            }
+            scheduleWaitingStallWatchdogIfNeeded(timeout: Self.slowSourceRecheckInterval)
+            return
+        }
+
+        guard stallRetryCount < Self.maxStallRetries else {
+            giveUpStalledPlayback(notice: .stalledGaveUp)
+            return
+        }
+        stallRetryCount += 1
+        bgLog.warning("⚠️ waiting-stall: no audio for \(wait)s — reload \(self.stallRetryCount)/\(Self.maxStallRetries)")
+        handlePlaybackStall()
+    }
+
+    /// 配信元からの転送の速さと、再生に必要な速さ（どちらも bit/s）。
+    /// データがまったく届いていない（＝遅いのではなく繋がらない）ときや、まだ測れないときは nil。
+    ///
+    /// MP3 などの通常のファイル配信では accessLog の transferDuration が 0 のままなので使わない。
+    /// observedBitrate（AVPlayer が測った転送の速さ）を使い、無ければ
+    /// 「届いたバイト数 ÷ この item を作ってからの時間」で割り出す。
+    private func measuredTransferRates() -> (observed: Double, required: Double)? {
+        guard let events = player?.currentItem?.accessLog()?.events, let last = events.last else { return nil }
+        let bytes = events.reduce(Int64(0)) { $0 + max($1.numberOfBytesTransferred, 0) }
+        guard bytes > 0 else { return nil }
+        let required = requiredBitrate ?? Self.fallbackRequiredBitrate
+        if last.observedBitrate.isFinite, last.observedBitrate > 0 {
+            return (last.observedBitrate, required)
+        }
+        let elapsed = ProcessInfo.processInfo.systemUptime - currentItemStartedUptime
+        guard elapsed >= 5 else { return nil }
+        return (Double(bytes) * 8 / elapsed, required)
+    }
+
+    /// 読み込めないまま限度を超えたので止め、画面に理由を出す。
+    private func giveUpStalledPlayback(notice: PlaybackNotice) {
+        bgLog.warning("⛔️ giving up stalled playback: \(String(describing: notice)) retries=\(self.stallRetryCount)")
+        cancelWaitingStallWatchdog()
+        pausePlayback(trigger: "stall-give-up")
+        playbackNotice = notice
+    }
+
     private func handlePlaybackStall() {
+        guard isPlaying, let episode = currentEpisode else { return }
+        // 配信元が遅いだけのときは、読み込み直すと読み込み済みの分を捨てて最初の待ちからやり直すので不利。
+        if isSourceSlow {
+            scheduleWaitingStallWatchdogIfNeeded(timeout: Self.slowSourceRecheckInterval)
+            return
+        }
         let now = ProcessInfo.processInfo.systemUptime
-        guard now - lastStalledReloadUptime > 10 else {
-            bgLog.warning("⚠️ stall: skipping reload (cooldown)")
+        let sinceLast = now - lastStalledReloadUptime
+        guard sinceLast > 10 else {
+            // 見送るだけだと、その後だれも試し直さず「接続待ち…」のまま固まるので、間を空けて見張り直す。
+            bgLog.warning("⚠️ stall: reload deferred (cooldown)")
+            scheduleWaitingStallWatchdogIfNeeded(timeout: max(10 - sinceLast, 1))
             return
         }
         lastStalledReloadUptime = now
-        guard isPlaying, let episode = currentEpisode else { return }
         bgLog.warning("⚠️ stall detected at \(self.currentTime)s — reloading stream")
         reloadCurrentStreamPreservingState(episode: episode)
     }
@@ -909,6 +1058,13 @@ final class AudioPlayerService {
         self.currentEpisode?.totalDuration = cmDur.seconds
         if !isInBackground { try? self.modelContext?.save() }
         self.nowPlayingSync.updateNowPlaying()
+        // 「配信元が遅い」の判断に使う、再生に必要な速さ。
+        if requiredBitrate == nil,
+           let track = try? await asset.loadTracks(withMediaType: .audio).first,
+           let rate = try? await track.load(.estimatedDataRate), rate > 0,
+           playbackGeneration == generation {
+            requiredBitrate = Double(rate)
+        }
     }
 
     private func applySeek(to seconds: TimeInterval) {
@@ -1378,6 +1534,11 @@ final class AudioPlayerService {
         attachEndObserver(for: newItem)
         attachStalledObserver(for: newItem)
         attachItemStatusObserver(for: newItem)
+        // 読み込み直しても「待ち」のままだと状態が変わらず KVO が来ないので、ここで見張りを掛け直す。
+        if isPlaying {
+            cancelWaitingStallWatchdog()
+            scheduleWaitingStallWatchdogIfNeeded()
+        }
         nowPlayingSync.updateNowPlaying(elapsed: resumeAt)
         // replaceCurrentItem 後 seek 完了前に周期オブザーバーが time=0 を currentTime に書き込まないよう保護。
         isSeeking = true
@@ -1725,7 +1886,9 @@ final class AudioPlayerService {
         )
     }
 
-    private func installRestoredPlayer(
+    /// 新しい AVPlayer を作り、監視を付け、保存された位置へ移す（再生の開始と、前回の復元で共通）。
+    /// ここに監視を足せば、どちらの経路にも効く。
+    private func installPlayer(
         url: URL,
         episode: Episode,
         isBookmarkedLocal: Bool,
@@ -1735,6 +1898,7 @@ final class AudioPlayerService {
         let item = makePlayerItem(url: url, isLocalFile: isLocalFile)
         let newPlayer = AVPlayer(playerItem: item)
         newPlayer.allowsExternalPlayback = false
+        // ストリーミングはバッファ待ちを有効にして切れ欠けノイズを抑える。ローカルは即時再生。
         newPlayer.automaticallyWaitsToMinimizeStalling = !isLocalFile
         player = newPlayer
         nowPlayingSync.attachPlayer(newPlayer)
@@ -1753,6 +1917,20 @@ final class AudioPlayerService {
             let t = CMTime(seconds: episode.playbackPosition, preferredTimescale: 600)
             player?.seek(to: t, toleranceBefore: .zero, toleranceAfter: .zero)
         }
+    }
+
+    private func installRestoredPlayer(
+        url: URL,
+        episode: Episode,
+        isBookmarkedLocal: Bool,
+        generation: Int
+    ) {
+        installPlayer(
+            url: url,
+            episode: episode,
+            isBookmarkedLocal: isBookmarkedLocal,
+            generation: generation
+        )
 
         isPlaying = false
         syncPlaybackChrome(liveTime: currentTime)

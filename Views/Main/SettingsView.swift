@@ -5,6 +5,8 @@ import UIKit
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(LanguageSettings.self) private var lang
+    @AppStorage(OsmStartupSettings.showStartupKey) private var showStartupScreen = true
+    @AppStorage(OsmStartupSettings.showUsageKey) private var showUsageScreen = true
 
     @State private var enableHaptic = AppSettings.enableHapticFeedback
     @State private var hapticIntensity = AppSettings.hapticIntensity
@@ -44,6 +46,19 @@ struct SettingsView: View {
                         .foregroundStyle(AppPalette.textOnSubpageSecondary)
                 } footer: {
                     Text(s.languageFooter)
+                        .foregroundStyle(AppPalette.textOnSubpageSecondary)
+                }
+                .osmSettingsCardRow()
+
+                Section {
+                    Toggle(s.startupSetting, isOn: $showStartupScreen)
+                        .onChange(of: showStartupScreen) { _, on in
+                            if !on { showUsageScreen = false }
+                        }
+                    Toggle(s.usageSetting, isOn: $showUsageScreen)
+                        .disabled(!showStartupScreen)
+                } header: {
+                    Text(s.startupSettingsGroup)
                         .foregroundStyle(AppPalette.textOnSubpageSecondary)
                 }
                 .osmSettingsCardRow()
@@ -102,12 +117,18 @@ struct SettingsView: View {
                     }
                     OsmDisclosureRow(title: s.settingsGroupPlayback, systemImage: "play.circle", accent: .blue) {
                     NavigationLink {
-                        PlaybackOptionsView()
+                        Group {
+                            PlaybackOptionsView()
+                        }
+                        .osmSwipeToClose()
                     } label: {
                         Label(s.playbackOptions, systemImage: "play.circle")
                     }
                     NavigationLink {
-                        DataManagementGroupView()
+                        Group {
+                            DataManagementGroupView()
+                        }
+                        .osmSwipeToClose()
                     } label: {
                         Label(s.dataManagementGroup, systemImage: "externaldrive")
                     }
@@ -146,13 +167,6 @@ struct SettingsView: View {
             .osmSubpageListChrome()
             .navigationTitle(s.settings)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "checkmark")
-                    }
-                }
-            }
             .onAppear {
                 enableHaptic = AppSettings.enableHapticFeedback
                 hapticIntensity = AppSettings.hapticIntensity
@@ -517,7 +531,10 @@ struct AutoPlayExcludedShowsView: View {
             if hasDuplicateTitles {
                 Section {
                     NavigationLink {
-                        ShowManagementView()
+                        Group {
+                            ShowManagementView()
+                        }
+                        .osmSwipeToClose()
                     } label: {
                         Label(s.showManagementMergeButton, systemImage: "arrow.triangle.merge")
                     }
@@ -583,7 +600,10 @@ struct PlaybackOptionsView: View {
             // 🔀 シェイクで巻き戻す時間
             Section {
                 NavigationLink {
-                    ShakeRewindSettingsDetailView()
+                    Group {
+                        ShakeRewindSettingsDetailView()
+                    }
+                    .osmSwipeToClose()
                 } label: {
                     HStack {
                         Text(s.shakeRewindDuration)
@@ -636,7 +656,10 @@ struct PlaybackOptionsView: View {
                         AppSettings.autoPlayOrder = v
                     }
                     NavigationLink {
-                        AutoPlayExcludedShowsView()
+                        Group {
+                            AutoPlayExcludedShowsView()
+                        }
+                        .osmSwipeToClose()
                     } label: {
                         Text(s.autoPlayExcludedShowsButton)
                     }
@@ -671,7 +694,10 @@ struct DataManagementGroupView: View {
             // ☁️ iCloud 同期
             Section {
                 NavigationLink {
-                    CloudSyncSettingsView()
+                    Group {
+                        CloudSyncSettingsView()
+                    }
+                    .osmSwipeToClose()
                 } label: {
                     Label(s.cloudSync, systemImage: "arrow.triangle.2.circlepath.icloud")
                 }
@@ -684,7 +710,10 @@ struct DataManagementGroupView: View {
             // 💾 データ管理
             Section {
                 NavigationLink {
-                    DataManagementView()
+                    Group {
+                        DataManagementView()
+                    }
+                    .osmSwipeToClose()
                 } label: {
                     Label(s.dataManagement, systemImage: "externaldrive")
                 }

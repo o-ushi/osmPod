@@ -81,6 +81,9 @@ struct HelpView: View {
                     OsmDisclosureRow(title: s.helpTShakeTitle, systemImage: "iphone.radiowaves.left.and.right", accent: .blue) {
                         OsmStepList(steps: [s.helpTShake1, s.helpTShake2], accent: .blue)
                     }
+                    OsmDisclosureRow(title: s.helpTStallTitle, systemImage: "wifi.exclamationmark", accent: .blue) {
+                        OsmStepList(steps: [s.helpTStall1, s.helpTStall2, s.helpTStall3], accent: .blue)
+                    }
                 }
                 .osmSettingsCardRow()
 
@@ -96,7 +99,10 @@ struct HelpView: View {
 
                 Section {
                     NavigationLink {
-                        PrivacyView()
+                        Group {
+                            PrivacyView()
+                        }
+                        .osmSwipeToClose()
                     } label: {
                         Label(PrivacyText.title(lang.language), systemImage: "hand.raised.fill")
                     }
@@ -111,16 +117,6 @@ struct HelpView: View {
             .osmSubpageListChrome()
             .navigationTitle(s.help)
             .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
-                    .accessibilityLabel(s.close)
-                }
-            }
         }
     }
 

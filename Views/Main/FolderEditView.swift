@@ -62,16 +62,21 @@ struct FolderEditView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark")
+                    Group {
+                        Button { dismiss() } label: {
+                            Image(systemName: "xmark")
+                        }
                     }
+                    .tint(AppPalette.textOnSubpagePrimary)
                 }
+                .osmPlainBackground()
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { save() } label: {
                         Image(systemName: folder == nil ? "plus" : "checkmark")
                     }
                     .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
+                .osmPlainBackground()
             }
             .onAppear {
                 if let folder {

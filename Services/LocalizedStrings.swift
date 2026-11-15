@@ -52,6 +52,9 @@ struct LocalizedStrings {
     var planManagementMenu: String { t("プラン管理", "Plan Management", "Quản lý gói") }
     var help: String { t("ヘルプ", "Help", "Trợ giúp") }
     var menuLabel: String { t("メニュー", "Menu", "Menu") }
+    /// […] のアイコンメニュー用の短いラベル。
+    var updateShowMetadataShort: String { t("番組情報を更新", "Update Shows", "Cập nhật") }
+    var addEpisodeToFolderShort: String { t("エピソード追加", "Add Episodes", "Thêm tập") }
     var randomModeLabel: String { t("ランダム再生", "Random Play", "Phát ngẫu nhiên") }
     var randomModeOn: String { t("ランダム再生オン", "Random Play On", "Phát ngẫu nhiên: Bật") }
     var randomModeOff: String { t("ランダム再生オフ", "Random Play Off", "Phát ngẫu nhiên: Tắt") }
@@ -111,15 +114,41 @@ struct LocalizedStrings {
     var helpTPlayTitle: String { t("再生画面を開く", "Open the player", "Mở trình phát") }
     var helpTPlay1: String { t("再生中に画面下のミニプレーヤーをタップ", "While playing, tap the mini player at the bottom", "Khi đang phát, chạm trình phát mini ở dưới cùng") }
     var helpTRandomTitle: String { t("おまかせで再生する", "Play at random", "Phát ngẫu nhiên") }
-    var helpTRandom1: String { t("タスクバーのシャッフルをタップ", "Tap shuffle in the task bar", "Chạm trộn bài trên thanh tác vụ") }
+    var helpTRandom1: String { t("ヘッダーのシャッフルをタップ", "Tap shuffle in the header", "Chạm trộn bài ở đầu màn hình") }
     var helpTRandom2: String { t("除く番組は再生オプションで選ぶ", "Choose excluded shows in the playback options", "Chọn chương trình loại trừ trong tùy chọn phát") }
     var helpTShakeTitle: String { t("聞き直す", "Listen again", "Nghe lại") }
     var helpTShake1: String { t("端末を振ると巻き戻す", "Shake the device to rewind", "Lắc máy để tua lại") }
     var helpTShake2: String { t("秒数は再生オプションで選ぶ", "Choose the seconds in the playback options", "Chọn số giây trong tùy chọn phát") }
+    var helpTStallTitle: String { t("再生が始まらないとき", "If playback doesn't start", "Khi không phát được") }
+    var helpTStall1: String { t("「\(waitingForConnectionShort)」：電波が戻ると、自動で読み込み直して再生します", "\"\(waitingForConnectionShort)\": osmPod reloads and resumes automatically when the signal returns", "\"\(waitingForConnectionShort)\": osmPod tự tải lại và phát tiếp khi có sóng") }
+    var helpTStall2: String { t("「\(sourceSlowShort)」（亀のアイコン）：番組の配信元からの読み込みが遅い状態です。エピソードをダウンロードしてから聞くと確実です", "\"\(sourceSlowShort)\" (tortoise icon): the podcast's server is sending audio slowly. Download the episode first to play it reliably", "\"\(sourceSlowShort)\" (biểu tượng con rùa): máy chủ của podcast gửi âm thanh chậm. Tải tập về trước để phát ổn định") }
+    var helpTStall3: String { t("しばらくしても再生できないときは停止して、画面に理由を表示します。▶︎ でもう一度試せます", "If it still can't play after a while, playback stops and the reason is shown. Tap ▶︎ to try again", "Nếu vẫn không phát được sau một lúc, ứng dụng sẽ dừng và hiện lý do. Chạm ▶︎ để thử lại") }
     var helpTBackupTitle: String { t("ライブラリを書き出す・取り込む", "Export or import your library", "Xuất hoặc nhập thư viện") }
     var helpTBackup1: String { t("「\(settings)」の「\(dataManagementGroup)」を開く", "Open \"\(dataManagementGroup)\" in \"\(settings)\"", "Mở \"\(dataManagementGroup)\" trong \"\(settings)\"") }
     var helpTPlanTitle: String { t("プランを確かめる", "Check your plan", "Kiểm tra gói") }
     var helpTPlan1: String { t("⋯ の「\(planManagementMenu)」をタップ", "Tap \"\(planManagementMenu)\" in ⋯", "Chạm \"\(planManagementMenu)\" trong ⋯") }
+    var waitingForConnection: String { t("接続待ち…電波の良い場所で再開します", "Waiting for connection… resumes when the signal returns", "Đang chờ kết nối… sẽ phát tiếp khi có sóng") }
+    var waitingForConnectionShort: String { t("接続待ち…", "Waiting for connection…", "Đang chờ kết nối…") }
+    var sourceSlow: String { t("配信元からの読み込みが遅いようです。ダウンロードしてから聞くと確実です", "The podcast's server is sending audio slowly. Downloading the episode first is more reliable.", "Máy chủ của podcast đang gửi âm thanh chậm. Tải tập về trước sẽ ổn định hơn.") }
+    var sourceSlowShort: String { t("配信元が遅い…", "Server is slow…", "Máy chủ chậm…") }
+    var playbackStoppedStalled: String { t("音声を読み込めないため停止しました。少し時間をおくか、ダウンロードしてからお試しください", "Stopped because the audio couldn't be loaded. Try again later, or download the episode first.", "Đã dừng vì không tải được âm thanh. Hãy thử lại sau hoặc tải tập về trước.") }
+    var playbackStoppedStalledShort: String { t("読み込めず停止", "Stopped: couldn't load", "Đã dừng: không tải được") }
+    var playbackStoppedSlow: String { t("配信元からの読み込みが遅すぎるため停止しました。ダウンロードしてから聞くと確実です", "Stopped because the podcast's server is too slow. Downloading the episode first is more reliable.", "Đã dừng vì máy chủ của podcast quá chậm. Tải tập về trước sẽ ổn định hơn.") }
+    var playbackStoppedSlowShort: String { t("配信元が遅く停止", "Stopped: server too slow", "Đã dừng: máy chủ quá chậm") }
+    var searchClear: String { t("検索をやめる", "Clear search", "Xóa tìm kiếm") }
+    var startupStart: String { t("はじめる", "Get started", "Bắt đầu") }
+    var startupDontShowAgain: String { t("次回から表示しない", "Don't show again", "Không hiện lại") }
+    var startupSettingsGroup: String { t("案内", "Guides", "Hướng dẫn") }
+    var startupSetting: String { t("スタートアップ画面", "Startup screen", "Màn hình khởi động") }
+    var usageSetting: String { t("使い方画面", "How-to screen", "Màn hình cách dùng") }
+    var usageTitle: String { t("使い方", "How to use", "Cách dùng") }
+    var usageGoHome: String { t("ホーム画面へ", "Go to Home", "Về màn hình chính") }
+    var usageCopyBody: String { t(
+        "Google の AI モードで答えが出たら、画面の下のほうにあるコピーボタンをタップしてください。下の画像の赤い矢印と TAP! が指している、左端の重なった2つの四角です。\n\nコピーできたら osmPod に戻り、「クリップボードを読み取る」を押してください。",
+        "When Google's AI Mode shows an answer, tap the Copy button near the bottom of the screen — the leftmost icon of two overlapping squares, marked TAP! with a red arrow.\n\nAfter copying, come back to osmPod and tap \"Read Clipboard\".",
+        "Khi AI Mode của Google hiện câu trả lời, hãy chạm nút Sao chép ở phía dưới màn hình — biểu tượng ngoài cùng bên trái gồm hai hình vuông chồng lên nhau, có mũi tên đỏ và chữ TAP!.\n\nSau khi sao chép, hãy quay lại osmPod và chạm \"Đọc clipboard\"."
+    ) }
+    var usageCopyImageLabel: String { t("AIモードのコピーボタン（赤い矢印と TAP!）", "Copy button in AI Mode (red arrow and TAP!)", "Nút sao chép trong AI Mode (mũi tên đỏ và TAP!)") }
     var helpIntro: String { t("ポッドキャストをひとつのライブラリで聴くアプリです。", "Listen to your podcasts in one library.", "Nghe podcast trong một thư viện.") }
     var settingsGroupDisplay: String { t("表示と操作", "Display and controls", "Hiển thị và thao tác") }
     var settingsGroupPlayback: String { t("再生とデータ", "Playback and data", "Phát và dữ liệu") }

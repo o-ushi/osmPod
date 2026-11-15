@@ -62,18 +62,22 @@ struct EpisodeSearchView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        isPresentingFolderPicker = true
-                    } label: {
-                        Label(
-                            selectedIDs.isEmpty
-                                ? s.addToFolder
-                                : s.addCountToFolder(selectedIDs.count),
-                            systemImage: "folder.badge.plus"
-                        )
+                    Group {
+                        Button {
+                            isPresentingFolderPicker = true
+                        } label: {
+                            Label(
+                                selectedIDs.isEmpty
+                                    ? s.addToFolder
+                                    : s.addCountToFolder(selectedIDs.count),
+                                systemImage: "folder.badge.plus"
+                            )
+                        }
+                        .disabled(selectedIDs.isEmpty)
                     }
-                    .disabled(selectedIDs.isEmpty)
+                    .tint(AppPalette.textOnSubpagePrimary)
                 }
+                .osmPlainBackground()
             }
             .sheet(isPresented: $isPresentingFolderPicker, onDismiss: {
                 selectedIDs.removeAll()

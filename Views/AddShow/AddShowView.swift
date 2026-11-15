@@ -77,24 +77,32 @@ struct AddShowView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark")
+                    Group {
+                        Button { dismiss() } label: {
+                            Image(systemName: "xmark")
+                        }
+                        .disabled(isLoading)
                     }
-                    .disabled(isLoading)
+                    .tint(AppPalette.textOnSubpagePrimary)
                 }
+                .osmPlainBackground()
                 if selectedMethod == .directRSS {
                     ToolbarItem(placement: .topBarTrailing) {
-                        if isLoading {
-                            ProgressView()
-                        } else {
-                            Button {
-                                Task { @MainActor in await registerShow(strings: s) }
-                            } label: {
-                                Image(systemName: "plus")
+                        Group {
+                            if isLoading {
+                                ProgressView()
+                            } else {
+                                Button {
+                                    Task { @MainActor in await registerShow(strings: s) }
+                                } label: {
+                                    Image(systemName: "plus")
+                                }
+                                .disabled(feedURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                             }
-                            .disabled(feedURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         }
+                        .tint(AppPalette.textOnSubpagePrimary)
                     }
+                    .osmPlainBackground()
                 }
             }
         }

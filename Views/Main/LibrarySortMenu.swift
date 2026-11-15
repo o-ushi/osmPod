@@ -28,9 +28,8 @@ struct LibrarySortToolbarMenu: View {
         } label: {
             Image(systemName: "arrow.up.arrow.down")
                 .font(.body.weight(.semibold))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(.white)
                 .frame(width: 36, height: 36)
-                .background(Color.accentColor.opacity(0.14), in: Circle())
         }
         .accessibilityLabel(s.sortLabel)
         .modifier(SortMenuPresentationModifier(
