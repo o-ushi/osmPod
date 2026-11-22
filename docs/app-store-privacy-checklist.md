@@ -17,7 +17,7 @@
 - [x] Factory ResetでSwiftDataレコード、EpisodeDownloads、LocalFileImports、FolderBookmarks、画像cache、Share一時データ、対象UserDefaultsを削除
 - [x] Factory Reset時のiCloud KVS削除をユーザー選択式にした
 - [x] ログ共有前に含有項目を確認
-- [x] iPhone+iPad Universal（Targeted Device Family 1,2）を維持しつつ、`UIRequiresFullScreen`をYESのまま（Split View/Slide Overは無効）、iPhoneは縦向き固定、iPadは縦＋横左＋横右（上下逆さまは含めない）。iPadの縦はiPhone相当の1カラム、横のときだけアプリ内で左ライブラリ・右再生に分割（2026-07-18、iPhone専用化はApple提出時に前バージョンのデバイス対応を外すため90101エラーで却下されたため復元／iPad横の左右分割は2026-11-22）
+- [x] iPhone+iPad Universal（Targeted Device Family 1,2）を維持しつつ、`UIRequiresFullScreen`をYESのまま（Split View/Slide Overは無効）、iPhoneは縦向き固定、iPadは縦＋上下逆さま＋横左＋横右の4方向。iPadの縦はiPhone相当の1カラム、横のときだけアプリ内で左ライブラリ・右再生に分割（2026-07-18、iPhone専用化はApple提出時に前バージョンのデバイス対応を外すため90101エラーで却下されたため復元／iPad横の左右分割は2026-11-22）
 - [x] 本体とShare Extensionのbuild番号を2へ更新
 
 ## App Store Connectで要確認
@@ -39,4 +39,4 @@
 6. ダウンロード、ローカル取込、フォルダブックマーク、画像表示、Share取込待ち、設定変更を作成してFactory Reset。各ローカルデータが消えることを確認。
 7. iCloud削除スイッチOFFでResetしクラウド値が残ること、ONでResetしKVS値が消えることを別のテストデータで確認。
 8. 開発者メニューからログ共有を押し、含有項目の説明後にだけ共有シートが開くことを確認。
-9. iPhoneシミュレータで縦向き固定、iPadシミュレータで縦は1カラム・横（左右）は左ライブラリ／右再生の分割になり上下逆さまにはならないこと、両方でSplit View/Slide Overが無効なことを確認。Release設定でビルドした`.app`のInfo.plistを`plutil -p`で見て、`UIRequiresFullScreen`がtrue、iPhone向きが縦のみ、`UISupportedInterfaceOrientations~ipad`が縦・横左・横右の配列であることを確認。Archive前のGeneral/Deployment InfoでiPhone+iPadが対応デバイスに含まれることを確認。
+9. iPhoneシミュレータで縦向き固定、iPadシミュレータで縦は1カラム・上下逆さまは1カラム、横（左右）は左ライブラリ／右再生の分割になること、両方でSplit View/Slide Overが無効なことを確認。Release設定でビルドした`.app`のInfo.plistを`plutil -p`で見て、`UIRequiresFullScreen`がtrue、iPhone向きが縦のみ、`UISupportedInterfaceOrientations~ipad`が縦・上下逆さま・横左・横右の配列であることを確認。Archive前のGeneral/Deployment InfoでiPhone+iPadが対応デバイスに含まれることを確認。

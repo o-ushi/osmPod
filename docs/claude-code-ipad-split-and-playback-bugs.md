@@ -88,7 +88,7 @@ iPad の値は、スペース区切りの1文字列で書く。配列の書き�
 ```text
 INFOPLIST_KEY_UIRequiresFullScreen = YES;
 INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
-INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 TARGETED_DEVICE_FAMILY = "1,2";
 ```
 
@@ -104,6 +104,7 @@ TARGETED_DEVICE_FAMILY = "1,2";
 <key>UISupportedInterfaceOrientations~ipad</key>
 <array>
 	<string>UIInterfaceOrientationPortrait</string>
+	<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	<string>UIInterfaceOrientationLandscapeLeft</string>
 	<string>UIInterfaceOrientationLandscapeRight</string>
 </array>
@@ -111,7 +112,7 @@ TARGETED_DEVICE_FAMILY = "1,2";
 
 守ること:
 
-- `UIRequiresFullScreen` は YES のまま。iPad が4方向すべてを持たない状態でこれを外すと、**ITMS-90474**（iPad Multitasking には Portrait / PortraitUpsideDown / LandscapeLeft / LandscapeRight が必要）で提出できない。上下逆さまは足さない。フルスクリーン必須のままで、縦・横左・横右の3つにする
+- `UIRequiresFullScreen` は YES のまま。iPad が4方向すべてを持たない状態でこれを外すと、**ITMS-90474**（iPad Multitasking には Portrait / PortraitUpsideDown / LandscapeLeft / LandscapeRight が必要）で提出できない。フルスクリーン必須のままで、縦・上下逆さま・横左・横右の4つにする（上下逆さまが無いと、横から iPad を逆さにしたとき横表示のまま残る）
 - 横向きは `_iPad` だけに足す。`_iPhone` と、接尾辞なしの `UISupportedInterfaceOrientations` に横を入れない
 - ソースの `Info.plist` と `osmPodShare/Info.plist` に向きのキーを足さない。ビルド設定と二重になると、マージ後の plist が壊れる
 - `TARGETED_DEVICE_FAMILY` は `"1,2"` のまま。共有拡張も触らない
@@ -122,15 +123,15 @@ TARGETED_DEVICE_FAMILY = "1,2";
 1. 上の「申請で落ちない向きの書き方」どおりに、アプリターゲットの Debug と Release を変える
 2. iPad 横のときだけ上記の2ペインにする。右は今の `PlayerView` の中身をシートではなく常時表示する
 3. 左は今のライブラリ（検索、フォルダ、番組、エピソード）のまま使えるようにする
-4. `docs/app-store-privacy-checklist.md` の「iPad も縦向き固定」という記述と、手動テスト手順9だけ、今回の仕様に合わせて直す。iPhone は縦固定、iPad は縦＋横左＋横右、`UIRequiresFullScreen` は YES のまま（Split View / Slide Over は無効）、`TARGETED_DEVICE_FAMILY` は 1,2 のまま。メタデータ本文やスクリーンショット用の文案は触らない
+4. `docs/app-store-privacy-checklist.md` の「iPad も縦向き固定」という記述と、手動テスト手順9だけ、今回の仕様に合わせて直す。iPhone は縦固定、iPad は縦＋上下逆さま＋横左＋横右、`UIRequiresFullScreen` は YES のまま（Split View / Slide Over は無効）、`TARGETED_DEVICE_FAMILY` は 1,2 のまま。メタデータ本文やスクリーンショット用の文案は触らない
 
 ### 確認
 
 - iPhone シミュレータ: 縦のまま。横にならない。見た目が以前と同じ
 - iPad シミュレータ縦: 今までどおり1カラム。ミニプレーヤーから再生シートが開く
-- iPad シミュレータ横: 左ライブラリ / 右再生。エピソードタップで右が切り替わる。未再生時は右が空案内。設定や番組追加はシート。ミニプレーヤーは出ない。上下逆さまにはならない
+- iPad シミュレータ横: 左ライブラリ / 右再生。エピソードタップで右が切り替わる。未再生時は右が空案内。設定や番組追加はシート。ミニプレーヤーは出ない。上下逆さまにすると縦の1カラムになる
 - 横から縦へ戻すと、再生は途切れず、1カラムに戻る
-- Release ビルドの `.app/Info.plist` で、`UIRequiresFullScreen` が true、iPhone 向きが縦のみ、`UISupportedInterfaceOrientations~ipad` が縦・横左・横右の配列であること
+- Release ビルドの `.app/Info.plist` で、`UIRequiresFullScreen` が true、iPhone 向きが縦のみ、`UISupportedInterfaceOrientations~ipad` が縦・上下逆さま・横左・横右の配列であること
 
 ---
 
