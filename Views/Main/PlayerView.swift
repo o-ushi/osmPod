@@ -8,6 +8,9 @@ struct PlayerView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(LanguageSettings.self) private var lang
 
+    /// iPad 横の右ペインに常時出すとき true。閉じるボタンを出さず、未再生なら空の案内にする。
+    var isEmbedded = false
+
     /// ドラッグ中はタイマーによる currentTime の上書きをブロックするためのフラグ。
     @State private var isDraggingSlider = false
     /// ドラッグ中にスライダーが表示する値（指を離したときに seek する）。
@@ -15,204 +18,221 @@ struct PlayerView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    playerArtworkView
-                        .padding(.top, 8)
-
-                    VStack(spacing: 6) {
-                        Text(audioPlayer.currentEpisode?.title ?? "")
-                            .font(.title3.weight(.semibold))
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                        Text(audioPlayer.currentEpisode?.show.title ?? "")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                    .padding(.horizontal, 24)
-
-                    if let episode = audioPlayer.currentEpisode {
-                        HStack(spacing: 24) {
-                            Button {
-                                HapticManager.shared.provideFeedback()
-                                audioPlayer.toggleRepeat()
-                            } label: {
-                                Label(
-                                    lang.strings.repeatPlayback,
-                                    systemImage: audioPlayer.isRepeatEnabled ? "repeat.1" : "repeat"
-                                )
-                                .labelStyle(.iconOnly)
-                                .font(.title2)
-                                .foregroundStyle(
-                                    audioPlayer.isRepeatEnabled
-                                        ? AnyShapeStyle(.tint)
-                                        : AnyShapeStyle(.secondary)
-                                )
-                            }
-                            .buttonStyle(.plain)
-
-                            Button {
-                                HapticManager.shared.provideFeedback()
-                                toggleFavorite(episode: episode)
-                            } label: {
-                                Label(
-                                    episode.isFavorite ? lang.strings.favorited : lang.strings.favorite,
-                                    systemImage: episode.isFavorite ? "star.fill" : "star"
-                                )
-                                .labelStyle(.iconOnly)
-                                .font(.title2)
-                                .foregroundStyle(
-                                    episode.isFavorite
-                                        ? AnyShapeStyle(.yellow)
-                                        : AnyShapeStyle(.secondary)
-                                )
-                            }
-                            .buttonStyle(.plain)
-
-                            Button {
-                                HapticManager.shared.provideFeedback()
-                                Task {
-                                    try? await downloadService.toggleDownload(for: episode, context: modelContext)
-                                }
-                            } label: {
-                                if downloadService.isDownloading(episode) {
-                                    ProgressView()
-                                        .controlSize(.small)
-                                        .frame(width: 20, height: 20)
-                                } else {
-                                    Label(
-                                        downloadService.isDownloaded(episode) ? lang.strings.downloaded : lang.strings.download,
-                                        systemImage: downloadService.isDownloaded(episode) ? "checkmark.circle.fill" : "arrow.down.circle"
-                                    )
-                                    .labelStyle(.iconOnly)
-                                    .font(.title2)
-                                    .foregroundStyle(
-                                        downloadService.isDownloaded(episode)
-                                            ? AnyShapeStyle(.green)
-                                            : AnyShapeStyle(.secondary)
-                                    )
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-
-                    VStack(spacing: 6) {
-                        Slider(
-                            value: Binding(
-                                get: { isDraggingSlider ? sliderDragValue : audioPlayer.currentTime },
-                                set: { newValue in
-                                    // set は onEditingChanged(true) より先に呼ばれることがあるため
-                                    // ここでもドラッグ開始を検知してフラグを立てる。
-                                    if !isDraggingSlider {
-                                        sliderDragValue = audioPlayer.currentTime
-                                        isDraggingSlider = true
-                                    }
-                                    sliderDragValue = newValue
-                                }
-                            ),
-                            in: 0...max(audioPlayer.duration, 1),
-                            onEditingChanged: { editing in
-                                if !editing {
-                                    isDraggingSlider = false
-                                    audioPlayer.seek(to: sliderDragValue)
-                                }
-                            }
-                        )
-                        HStack {
-                            Text(formatTime(isDraggingSlider ? sliderDragValue : audioPlayer.currentTime))
-                            Spacer()
-                            Text(formatTime(audioPlayer.duration))
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        // 再生中なのに通信が来ず音が出ていないとき。配信元が遅いと分かればそう出す。
-                        if audioPlayer.isWaitingForConnection {
-                            Label(
-                                audioPlayer.isSourceSlow
-                                    ? lang.strings.sourceSlow
-                                    : lang.strings.waitingForConnection,
-                                systemImage: audioPlayer.isSourceSlow ? "tortoise" : "wifi.exclamationmark"
-                            )
-                                .font(.footnote.weight(.semibold))
-                                .foregroundStyle(.orange)
-                                .multilineTextAlignment(.center)
-                                .padding(.top, 4)
-                                .accessibilityIdentifier("waiting-for-connection")
-                        } else if !audioPlayer.isPlaying, let notice = audioPlayer.playbackNotice {
-                            // 読み込めないまま限度を超えて自動で止めたとき。
-                            Label(
-                                notice == .sourceTooSlow
-                                    ? lang.strings.playbackStoppedSlow
-                                    : lang.strings.playbackStoppedStalled,
-                                systemImage: "exclamationmark.triangle"
-                            )
-                                .font(.footnote.weight(.semibold))
-                                .foregroundStyle(.orange)
-                                .multilineTextAlignment(.center)
-                                .padding(.top, 4)
-                                .accessibilityIdentifier("playback-stopped-notice")
-                        }
-                    }
-                    .padding(.horizontal, 24)
-
-                    HStack(spacing: 36) {
-                        Button {
-                            HapticManager.shared.provideFeedback()
-                            audioPlayer.seekBackward()
-                        } label: {
-                            Image(systemName: "gobackward.15")
-                                .font(.title)
-                        }
-
-                        Button {
-                            HapticManager.shared.provideFeedback()
-                            audioPlayer.togglePlayPause()
-                        } label: {
-                            Group {
-                                if audioPlayer.cloudFilePreparation.isActive {
-                                    ProgressView()
-                                        .controlSize(.large)
-                                } else {
-                                    Image(systemName: audioPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                                        .font(.system(size: 68))
-                                }
-                            }
-                            .frame(width: 68, height: 68)
-                        }
-                        .disabled(audioPlayer.cloudFilePreparation.isActive)
-
-                        Button {
-                            HapticManager.shared.provideFeedback()
-                            audioPlayer.seekForward()
-                        } label: {
-                            Image(systemName: "goforward.15")
-                                .font(.title)
-                        }
-
-                        Button {
-                            HapticManager.shared.provideFeedback()
-                            audioPlayer.skipToNextEpisode()
-                        } label: {
-                            Image(systemName: "forward.end.fill")
-                                .font(.title2)
-                        }
-                        .accessibilityLabel(lang.strings.skipToNextEpisode)
-                    }
-                    .foregroundStyle(.primary)
-                    .padding(.bottom, 16)
-                }
+            if isEmbedded && audioPlayer.currentEpisode == nil {
+                ContentUnavailableView(
+                    lang.strings.playerPaneEmptyTitle,
+                    systemImage: "waveform",
+                    description: Text(lang.strings.playerPaneEmptyDescription)
+                )
+            } else {
+                playerContent
             }
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
+        }
+    }
+
+    private var playerContent: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                playerArtworkView
+                    .padding(.top, 8)
+
+                VStack(spacing: 6) {
+                    Text(audioPlayer.currentEpisode?.title ?? "")
+                        .font(.title3.weight(.semibold))
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                    Text(audioPlayer.currentEpisode?.show.title ?? "")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 24)
+
+                if let episode = audioPlayer.currentEpisode {
+                    HStack(spacing: 24) {
+                        Button {
+                            HapticManager.shared.provideFeedback()
+                            audioPlayer.toggleRepeat()
+                        } label: {
+                            Label(
+                                lang.strings.repeatPlayback,
+                                systemImage: audioPlayer.isRepeatEnabled ? "repeat.1" : "repeat"
+                            )
+                            .labelStyle(.iconOnly)
+                            .font(.title2)
+                            .foregroundStyle(
+                                audioPlayer.isRepeatEnabled
+                                    ? AnyShapeStyle(.tint)
+                                    : AnyShapeStyle(.secondary)
+                            )
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            HapticManager.shared.provideFeedback()
+                            toggleFavorite(episode: episode)
+                        } label: {
+                            Label(
+                                episode.isFavorite ? lang.strings.favorited : lang.strings.favorite,
+                                systemImage: episode.isFavorite ? "star.fill" : "star"
+                            )
+                            .labelStyle(.iconOnly)
+                            .font(.title2)
+                            .foregroundStyle(
+                                episode.isFavorite
+                                    ? AnyShapeStyle(.yellow)
+                                    : AnyShapeStyle(.secondary)
+                            )
+                        }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            HapticManager.shared.provideFeedback()
+                            Task {
+                                try? await downloadService.toggleDownload(for: episode, context: modelContext)
+                            }
+                        } label: {
+                            if downloadService.isDownloading(episode) {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .frame(width: 20, height: 20)
+                            } else {
+                                Label(
+                                    downloadService.isDownloaded(episode) ? lang.strings.downloaded : lang.strings.download,
+                                    systemImage: downloadService.isDownloaded(episode) ? "checkmark.circle.fill" : "arrow.down.circle"
+                                )
+                                .labelStyle(.iconOnly)
+                                .font(.title2)
+                                .foregroundStyle(
+                                    downloadService.isDownloaded(episode)
+                                        ? AnyShapeStyle(.green)
+                                        : AnyShapeStyle(.secondary)
+                                )
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                VStack(spacing: 6) {
+                    Slider(
+                        value: Binding(
+                            get: { isDraggingSlider ? sliderDragValue : audioPlayer.currentTime },
+                            set: { newValue in
+                                // set は onEditingChanged(true) より先に呼ばれることがあるため
+                                // ここでもドラッグ開始を検知してフラグを立てる。
+                                if !isDraggingSlider {
+                                    sliderDragValue = audioPlayer.currentTime
+                                    isDraggingSlider = true
+                                }
+                                sliderDragValue = newValue
+                            }
+                        ),
+                        in: 0...max(audioPlayer.duration, 1),
+                        onEditingChanged: { editing in
+                            if !editing {
+                                isDraggingSlider = false
+                                audioPlayer.seek(to: sliderDragValue)
+                            }
+                        }
+                    )
+                    HStack {
+                        Text(formatTime(isDraggingSlider ? sliderDragValue : audioPlayer.currentTime))
+                        Spacer()
+                        Text(formatTime(audioPlayer.duration))
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    // 再生中なのに通信が来ず音が出ていないとき。配信元が遅いと分かればそう出す。
+                    if audioPlayer.isWaitingForConnection {
+                        Label(
+                            audioPlayer.isSourceSlow
+                                ? lang.strings.sourceSlow
+                                : lang.strings.waitingForConnection,
+                            systemImage: audioPlayer.isSourceSlow ? "tortoise" : "wifi.exclamationmark"
+                        )
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.orange)
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 4)
+                            .accessibilityIdentifier("waiting-for-connection")
+                    } else if !audioPlayer.isPlaying, let notice = audioPlayer.playbackNotice {
+                        // 読み込めないまま限度を超えて自動で止めたとき。
+                        Label(
+                            notice == .sourceTooSlow
+                                ? lang.strings.playbackStoppedSlow
+                                : lang.strings.playbackStoppedStalled,
+                            systemImage: "exclamationmark.triangle"
+                        )
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.orange)
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 4)
+                            .accessibilityIdentifier("playback-stopped-notice")
+                    }
+                }
+                .padding(.horizontal, 24)
+
+                HStack(spacing: 36) {
+                    Button {
+                        HapticManager.shared.provideFeedback()
+                        audioPlayer.seekBackward()
+                    } label: {
+                        Image(systemName: "gobackward.15")
+                            .font(.title)
+                    }
+
+                    Button {
+                        HapticManager.shared.provideFeedback()
+                        audioPlayer.togglePlayPause()
+                    } label: {
+                        Group {
+                            if audioPlayer.cloudFilePreparation.isActive {
+                                ProgressView()
+                                    .controlSize(.large)
+                            } else {
+                                Image(systemName: audioPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                                    .font(.system(size: 68))
+                            }
+                        }
+                        .frame(width: 68, height: 68)
+                    }
+                    .disabled(audioPlayer.cloudFilePreparation.isActive)
+
+                    Button {
+                        HapticManager.shared.provideFeedback()
+                        audioPlayer.seekForward()
+                    } label: {
+                        Image(systemName: "goforward.15")
+                            .font(.title)
+                    }
+
+                    Button {
+                        HapticManager.shared.provideFeedback()
+                        audioPlayer.skipToNextEpisode()
+                    } label: {
+                        Image(systemName: "forward.end.fill")
+                            .font(.title2)
+                    }
+                    .accessibilityLabel(lang.strings.skipToNextEpisode)
+                }
+                .foregroundStyle(.primary)
+                .padding(.bottom, 16)
+            }
+        }
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if !isEmbedded {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(lang.strings.close) { dismiss() }
                 }
                 .osmPlainBackground()
             }
-            .overlay {
+        }
+        .overlay {
+            // 右ペインのときは、ライブラリ側の同じ表示と重ねない。
+            if !isEmbedded {
                 CloudFilePreparationOverlay()
             }
         }

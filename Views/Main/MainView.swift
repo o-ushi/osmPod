@@ -47,9 +47,53 @@ struct MainView: View {
     @State private var searchTask: Task<Void, Never>?
     @State private var isRefreshingShowMetadata = false
     @State private var refreshResultMessage: String?
+    /// 画面（ウインドウ）全体の大きさ。キーボードで縦が縮んでも変わらないよう、セーフエリアを無視して測る。
+    @State private var windowSize: CGSize = .zero
+
+    /// iPad を横にしたときだけ、左ライブラリ・右再生に分ける。
+    /// iPad は縦でも横でも size class が regular なので、幅 > 高さで判定する。
+    private var isLandscapeSplit: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad && windowSize.width > windowSize.height
+    }
+
+    /// 右の再生ペインの幅。左 6・右 4 で、アートワークの余白が寂しくならないよう 420pt まで。
+    private var playerPaneWidth: CGFloat {
+        min(windowSize.width * 0.4, 420)
+    }
 
     var body: some View {
         let s = lang.strings
+        HStack(spacing: 0) {
+            libraryStack(strings: s)
+            if isLandscapeSplit {
+                Divider()
+                    .ignoresSafeArea()
+                PlayerView(isEmbedded: true)
+                    .frame(width: playerPaneWidth)
+            }
+        }
+        .background {
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear { windowSize = proxy.size }
+                    .onChange(of: proxy.size) { _, size in windowSize = size }
+            }
+            .ignoresSafeArea()
+        }
+        .onChange(of: isLandscapeSplit) { _, isSplit in
+            // 縦で開いていた再生シートは、横の右ペインと二重にならないよう閉じる。
+            if isSplit { isPresentingPlayer = false }
+        }
+        // シートではなくツールバーごと覆うので、NavigationStack の外に置く。
+        .overlay {
+            if isPresentingMoreMenu {
+                moreMenuOverlay(strings: s)
+                    .transition(.opacity)
+            }
+        }
+    }
+
+    private func libraryStack(strings s: LocalizedStrings) -> some View {
         NavigationStack {
             ScrollViewReader { scrollProxy in
                 ScrollView {
@@ -138,7 +182,8 @@ struct MainView: View {
                             bottomAudioURL: jumpContext.bottomAudioURL
                         )
                     }
-                    if audioPlayer.currentEpisode != nil {
+                    // iPad 横では右ペインに再生があるので、操作を二つに分けない。
+                    if audioPlayer.currentEpisode != nil && !isLandscapeSplit {
                         MiniPlayerView(onTap: { isPresentingPlayer = true })
                     }
                 }
@@ -197,13 +242,6 @@ struct MainView: View {
             }
             .overlay {
                 CloudFilePreparationOverlay()
-            }
-        }
-        // シートではなくツールバーごと覆うので、NavigationStack の外に置く。
-        .overlay {
-            if isPresentingMoreMenu {
-                moreMenuOverlay(strings: s)
-                    .transition(.opacity)
             }
         }
     }
