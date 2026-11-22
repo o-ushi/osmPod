@@ -60,6 +60,17 @@ final class AudioPlayerService {
     @ObservationIgnored private var waitingStallWatchdogTask: Task<Void, Never>?
     /// AVPlayer.seek が完了するまでタイマーによる currentTime 上書きを抑制するフラグ。
     @ObservationIgnored private var isSeeking = false
+    /// seek のたびに増やす。古い seek の完了で、新しい seek の `isSeeking` を下ろさないようにする。
+    @ObservationIgnored private var seekGeneration = 0
+    /// 直近の seek の目標位置。AVPlayer の実時刻がここに近づくまで、周期サンプルで時刻を上書きしない
+    /// （seek 前に採取されたサンプルが完了後に届き、表示が元の時刻へ跳ね返るのを防ぐ）。
+    @ObservationIgnored private var pendingSeekTarget: TimeInterval?
+    /// 直近の seek が完了した時刻。目標に届かないまま待ち続けないための逃げ道。
+    @ObservationIgnored private var seekCompletedUptime: TimeInterval = 0
+    /// 実時刻がこの範囲に入ったら、seek の目標に着いたとみなす。
+    private static let seekArrivalTolerance: TimeInterval = 3
+    /// seek 完了からこの時間たっても目標付近にならなければ、実時刻を受け入れる。
+    private static let seekArrivalTimeout: TimeInterval = 3
     /// `play()` / `setActive` の連打はオーディオグラフの切り替えノイズになるため間引く。
     @ObservationIgnored private var lastPlaybackRecoveryUptime: TimeInterval = 0
     @ObservationIgnored private var saveTask: Task<Void, Never>?
@@ -246,6 +257,8 @@ final class AudioPlayerService {
         self.queueContext = queueContext
         currentEpisode = episode
         currentTime = episode.playbackPosition
+        // 前のエピソードの末尾の位置を、バックグラウンドの読み込み直しで新しいエピソードに使わない。
+        inMemoryPlaybackPosition = episode.playbackPosition
         duration = episode.totalDuration
         didReachPlaybackEnd = false
         resetStallTracking()
@@ -417,7 +430,7 @@ final class AudioPlayerService {
     }
 
     /// 現在のエピソードを「再生済み」にせず、次のエピソードへ手動で進む。
-    /// 自然終了時の `enqueueNextEpisode` と同じ優先順位（キュー内 → グローバル自動再生 → ランダム）で次を選ぶ。
+    /// 自然終了時の `enqueueNextEpisode` と同じ優先順位（ランダム → 同じ番組の隣 → 設定の自動再生）で次を選ぶ。
     func skipToNextEpisode() {
         guard let current = currentEpisode, let context = modelContext else { return }
 
@@ -428,7 +441,7 @@ final class AudioPlayerService {
             return
         }
         if let next = nextEpisodeToAutoPlay(after: current) {
-            play(episode: next, context: context, queueContext: queueContext)
+            play(episode: next, context: context, queueContext: .show(current.show.persistentModelID))
             return
         }
         if let next = globalAutoPlayNextEpisode(after: current) {
@@ -674,17 +687,21 @@ final class AudioPlayerService {
                 // 直前のエピソードのタイマー Tick が、再生切り替え後にずれて届くのを防ぐ。
                 guard self.playbackGeneration == generation else { return }
                 guard self.isPlaying else { return }
-                let secs = time.seconds
-                guard secs.isFinite, secs >= 0 else { return }
                 // replaceCurrentItem 直後や failed item は時刻 0 などの不正値を返すためスキップ。
-                guard self.player?.currentItem?.status != .failed else { return }
+                guard let player = self.player, player.currentItem?.status != .failed else { return }
+                // `time` はこの Task より前に採取された値で、間に seek が終わっていると古い位置になる。
+                // MainActor に乗った今の実時刻を読む。
+                let live = player.currentTime().seconds
+                let secs = live.isFinite ? live : time.seconds
+                guard secs.isFinite, secs >= 0 else { return }
+                // seek 完了前、および実時刻が seek の目標に着く前は上書きしない
+                // （15 秒戻るが元の時刻へ跳ね返る・スライダーびよよーん防止）。
+                guard self.acceptsTimeSample(secs) else { return }
                 if self.isInBackground {
                     // SwiftData 更新と @Observable の通知を止める（WAL / SwiftUI の jetsam 回避）。
                     self.inMemoryPlaybackPosition = secs
                     return
                 }
-                // seek 完了前はタイマーによる上書きをスキップ（スライダーびよよーん防止）。
-                guard !self.isSeeking else { return }
                 // `playbackPosition` は persist 時だけ SwiftData に書く。
                 self.currentTime = secs
                 if self.isPlaying, self.playbackChrome.nowPlayingEpisodeID != nil {
@@ -698,14 +715,14 @@ final class AudioPlayerService {
         }
     }
 
-    private func attachEndObserver(for item: AVPlayerItem) {
+    private func attachEndObserver(for item: AVPlayerItem, generation: Int) {
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: item,
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
-                self?.onPlaybackEnded()
+                self?.onPlaybackEnded(generation: generation)
             }
         }
     }
@@ -755,6 +772,7 @@ final class AudioPlayerService {
                 } else {
                     capturedAt = self.isInBackground ? self.inMemoryPlaybackPosition : self.currentTime
                 }
+                if self.finishInsteadOfRecoveringIfNearEnd(at: capturedAt, reason: "item-failed") { return }
                 bgLog.info("⚠️ item.status=.failed capturedAt=\(capturedAt)s pendingReload=\(self.pendingReloadResumeAt) isSeeking=\(self.isSeeking) currentTime=\(self.currentTime) → starting network recovery monitor")
                 // ネットワーク復帰待ちの間、実際には無音なのに isPlaying=true のまま NowPlayingInfo が
                 // rate=1 を書き続けないよう、ここで CC/LS/アプリ UI 向けの表示だけを補正する。
@@ -807,6 +825,7 @@ final class AudioPlayerService {
                     return
                 }
                 guard self.isPlaying, itemFailed else { return }
+                if self.finishInsteadOfRecoveringIfNearEnd(at: capturedPosition, reason: "network-recovery") { return }
                 self.reloadCurrentStreamPreservingState(episode: episode, forcedResumeAt: capturedPosition)
             }
         }
@@ -973,6 +992,7 @@ final class AudioPlayerService {
     /// - そうでなければ、間隔を延ばしながら読み込み直す。
     /// - どちらも限度を超えたら、止めて知らせる（「接続待ち…」のまま放置しない）。
     private func handleWaitingTimeout(after wait: TimeInterval) {
+        if finishInsteadOfRecoveringIfNearEnd(at: latestKnownPlaybackPosition(), reason: "waiting-stall") { return }
         isNetworkStalled = true
         nowPlayingSync.applyNowPlayingInfo()
 
@@ -1028,8 +1048,39 @@ final class AudioPlayerService {
         playbackNotice = notice
     }
 
+    /// 末尾までの残りがこれ以下で読み込みが止まったら、巻き戻して読み込み直さず、終わりとして扱う。
+    /// 保存位置は再生ヘッドより最大 10 秒ほど古いので、読み込み直すと同じ outro がもう一度鳴る。
+    private static let nearEndThreshold: TimeInterval = 15
+
+    /// いま分かっている一番新しい再生位置。seek 中でなければ AVPlayer の実時刻も見る。
+    private func latestKnownPlaybackPosition() -> TimeInterval {
+        let base = isInBackground ? inMemoryPlaybackPosition : currentTime
+        guard !isSeeking, pendingSeekTarget == nil,
+              let player, player.currentItem?.status != .failed else { return base }
+        let live = player.currentTime().seconds
+        guard live.isFinite, live >= 0 else { return base }
+        return max(base, live)
+    }
+
+    private func isNearPlaybackEnd(_ position: TimeInterval) -> Bool {
+        let total = duration > 0 ? duration : (currentEpisode?.totalDuration ?? 0)
+        guard total > 0 else { return false }
+        return total - position <= Self.nearEndThreshold
+    }
+
+    /// 終わり付近の stall・失敗は、読み込み直さずにエピソードの終わりとして 1 回だけ処理する。
+    /// - Returns: 終わりとして処理した（または処理済みだった）ら true。呼び出し側は復帰をしない。
+    private func finishInsteadOfRecoveringIfNearEnd(at position: TimeInterval, reason: String) -> Bool {
+        if didReachPlaybackEnd { return true }
+        guard isNearPlaybackEnd(position) else { return false }
+        bgLog.info("🏁 \(reason, privacy: .public) near end at \(position)s / \(self.duration)s → finish without reload")
+        onPlaybackEnded(generation: playbackGeneration)
+        return true
+    }
+
     private func handlePlaybackStall() {
         guard isPlaying, let episode = currentEpisode else { return }
+        if finishInsteadOfRecoveringIfNearEnd(at: latestKnownPlaybackPosition(), reason: "stall") { return }
         // 配信元が遅いだけのときは、読み込み直すと読み込み済みの分を捨てて最初の待ちからやり直すので不利。
         if isSourceSlow {
             scheduleWaitingStallWatchdogIfNeeded(timeout: Self.slowSourceRecheckInterval)
@@ -1068,7 +1119,6 @@ final class AudioPlayerService {
     }
 
     private func applySeek(to seconds: TimeInterval) {
-        isSeeking = true
         if isInBackground {
             inMemoryPlaybackPosition = seconds
         } else {
@@ -1076,11 +1126,58 @@ final class AudioPlayerService {
             currentEpisode?.playbackPosition = seconds
             if isPlaying { playbackChrome.liveDisplayTime = seconds }
         }
-        let t = CMTime(seconds: seconds, preferredTimescale: 600)
-        player?.seek(to: t, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
-            Task { @MainActor [weak self] in self?.isSeeking = false }
+        guard player != nil else {
+            // 完了コールバックが来ないので isSeeking を立てない。保存位置から、あとで再生を始める。
+            isSeeking = false
+            pendingSeekTarget = nil
+            inMemoryPlaybackPosition = seconds
+            currentEpisode?.playbackPosition = seconds
+            nowPlayingSync.updateNowPlaying(elapsed: seconds)
+            return
         }
+        startTrackedSeek(to: seconds)
         nowPlayingSync.updateNowPlaying(elapsed: seconds)
+    }
+
+    /// AVPlayer を seek し、完了まで（＋実時刻が目標付近になるまで）周期サンプルでの上書きを止める。
+    /// 古い seek の完了は、新しい seek の状態を変えない。
+    private func startTrackedSeek(
+        to seconds: TimeInterval,
+        onFinished: (@MainActor (_ finished: Bool, _ isLatestSeek: Bool) -> Void)? = nil
+    ) {
+        guard let player else { return }
+        seekGeneration += 1
+        let generation = seekGeneration
+        isSeeking = true
+        pendingSeekTarget = seconds
+        let t = CMTime(seconds: seconds, preferredTimescale: 600)
+        player.seek(to: t, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let isLatestSeek = self.seekGeneration == generation
+                if isLatestSeek {
+                    self.isSeeking = false
+                    self.seekCompletedUptime = ProcessInfo.processInfo.systemUptime
+                    if !finished {
+                        // 中断された seek は目標に着かない。目標待ちを残すと時刻が止まる。
+                        self.pendingSeekTarget = nil
+                    }
+                }
+                onFinished?(finished, isLatestSeek)
+            }
+        }
+    }
+
+    /// 周期サンプルを時刻として採用してよいか。seek 中や、seek 前の位置のままのサンプルは捨てる。
+    private func acceptsTimeSample(_ seconds: TimeInterval) -> Bool {
+        guard !isSeeking else { return false }
+        guard let target = pendingSeekTarget else { return true }
+        if abs(seconds - target) <= Self.seekArrivalTolerance
+            || ProcessInfo.processInfo.systemUptime - seekCompletedUptime >= Self.seekArrivalTimeout {
+            pendingSeekTarget = nil
+            return true
+        }
+        return false
     }
 
     // MARK: - Local Folder Bookmark
@@ -1146,6 +1243,10 @@ final class AudioPlayerService {
         removeItemStatusObserver()
         stopNetworkRecoveryMonitor()
         pendingReloadResumeAt = -1
+        // 破棄する player の seek 完了は来ないか、来ても古い。次の player に持ち越さない。
+        seekGeneration += 1
+        isSeeking = false
+        pendingSeekTarget = nil
         saveTask?.cancel()
         saveTask = nil
         backgroundNowPlayingTask?.cancel()
@@ -1156,7 +1257,9 @@ final class AudioPlayerService {
         invalidatePlaybackAudioSessionState()
     }
 
-    private func onPlaybackEnded() {
+    private func onPlaybackEnded(generation: Int) {
+        // 同じ再生で終わり処理は 1 回だけ。遅れて届いた終了通知や別エピソードの通知では動かない。
+        guard generation == playbackGeneration, !didReachPlaybackEnd else { return }
         guard let finishedEpisode = currentEpisode else { return }
 
         if isRepeatEnabled {
@@ -1187,7 +1290,13 @@ final class AudioPlayerService {
         currentEpisode?.isPlayed = true
         currentEpisode?.playbackPosition = 0
         currentTime = 0
+        inMemoryPlaybackPosition = 0
         didReachPlaybackEnd = true
+        // 終わったあとの stall 復帰・ネットワーク復帰で、末尾をもう一度鳴らさない。
+        cancelWaitingStallWatchdog()
+        stopNetworkRecoveryMonitor()
+        isNetworkStalled = false
+        pendingReloadResumeAt = -1
         finishedEpisode.clearNewIndicator()
         if !isInBackground { try? modelContext?.save() }
         nowPlayingSync.updateNowPlaying(elapsed: 0)
@@ -1384,7 +1493,8 @@ final class AudioPlayerService {
                 // 上書きせず最後に記録した正しい位置を保持する。
                 if self.player?.currentItem?.status == .failed { break }
                 let raw = self.player?.currentTime().seconds ?? self.inMemoryPlaybackPosition
-                if raw.isFinite, raw >= 0 {
+                // ロック画面の 15 秒戻るの直後は、seek 前の位置で上書きしない。
+                if raw.isFinite, raw >= 0, self.acceptsTimeSample(raw) {
                     self.inMemoryPlaybackPosition = raw
                 }
                 tickCount += 1
@@ -1418,8 +1528,10 @@ final class AudioPlayerService {
         // （稀に発生する「再生が勝手に戻る」不具合の原因）。AVPlayer の実時刻を直接読み直す。
         // ただし failed item は currentTime() が 0 などの不正値を返すため読み直さない。
         // バックグラウンドトラッカーが item 失敗前の最終正常値を inMemoryPlaybackPosition に保持している。
+        // seek が終わる前（ロック画面の 15 秒戻る直後など）は、seek 前の位置を読んでしまうので読み直さない。
         if player?.currentItem?.status != .failed,
-           let raw = player?.currentTime().seconds, raw.isFinite, raw >= 0 {
+           let raw = player?.currentTime().seconds, raw.isFinite, raw >= 0,
+           acceptsTimeSample(raw) {
             inMemoryPlaybackPosition = raw
         }
         if inMemoryPlaybackPosition > 0 {
@@ -1453,6 +1565,8 @@ final class AudioPlayerService {
     }
 
     private func reloadCurrentStreamPreservingState(episode: Episode, forcedResumeAt: TimeInterval? = nil) {
+        // 終わり処理のあとに届いた復帰で、末尾へ巻き戻して再生し直さない。
+        guard !didReachPlaybackEnd else { return }
         guard let url = resolvePlaybackURL(for: episode), player != nil else { return }
 
         // forcedResumeAt が指定された場合はそれを優先する（ネットワーク復帰リロード時など、
@@ -1531,7 +1645,7 @@ final class AudioPlayerService {
         let isLocal = url.isFileURL && !isBookmarkedLocal
         let newItem = makePlayerItem(url: url, isLocalFile: isLocal)
         player.replaceCurrentItem(with: newItem)
-        attachEndObserver(for: newItem)
+        attachEndObserver(for: newItem, generation: generation)
         attachStalledObserver(for: newItem)
         attachItemStatusObserver(for: newItem)
         // 読み込み直しても「待ち」のままだと状態が変わらず KVO が来ないので、ここで見張りを掛け直す。
@@ -1540,28 +1654,28 @@ final class AudioPlayerService {
             scheduleWaitingStallWatchdogIfNeeded()
         }
         nowPlayingSync.updateNowPlaying(elapsed: resumeAt)
-        // replaceCurrentItem 後 seek 完了前に周期オブザーバーが time=0 を currentTime に書き込まないよう保護。
-        isSeeking = true
 
         Task { [weak self] in
             await self?.loadDurationFromAssetIfNeeded(generation: generation)
         }
 
-        let t = CMTime(seconds: resumeAt, preferredTimescale: 600)
-        player.seek(to: t, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                bgLog.info("🔍 reload seek finished=\(finished) resumeAt=\(resumeAt) currentTime=\(self.currentTime) itemStatus=\(self.player?.currentItem?.status.rawValue ?? -1)")
-                self.isSeeking = false
-                self.pendingReloadResumeAt = -1
+        // replaceCurrentItem 後 seek 完了前に周期オブザーバーが time=0 を currentTime に書き込まないよう保護。
+        startTrackedSeek(to: resumeAt) { [weak self] finished, isLatestSeek in
+            guard let self, self.playbackGeneration == generation else { return }
+            bgLog.info("🔍 reload seek finished=\(finished) latest=\(isLatestSeek) resumeAt=\(resumeAt) currentTime=\(self.currentTime) itemStatus=\(self.player?.currentItem?.status.rawValue ?? -1)")
+            self.pendingReloadResumeAt = -1
+            // 読み込み直しの途中でユーザーが seek したときは、その位置を優先する。
+            if isLatestSeek {
                 self.currentTime = resumeAt
                 self.currentEpisode?.playbackPosition = resumeAt
-                // stall 後のリロードでは AVPlayer の rate が 0 になっているため、明示的に再生を再開する。
-                // replaceCurrentItem 後にセッションが非アクティブになっていることがあるため再確認する。
-                if self.isPlaying {
-                    self.preparePlaybackAudioSession()
-                    self.playCurrentItem()
-                }
+            }
+            // stall 後のリロードでは AVPlayer の rate が 0 になっているため、明示的に再生を再開する。
+            // replaceCurrentItem 後にセッションが非アクティブになっていることがあるため再確認する。
+            if self.isPlaying {
+                self.preparePlaybackAudioSession()
+                self.playCurrentItem()
+            }
+            if isLatestSeek {
                 self.nowPlayingSync.updateNowPlaying(elapsed: resumeAt)
                 if self.isPlaying {
                     self.nowPlayingSync.scheduleNowPlayingReassert(elapsed: resumeAt)
@@ -1582,9 +1696,10 @@ final class AudioPlayerService {
         }
         if let nextEpisode = nextEpisodeToAutoPlay(after: finishedEpisode) {
             guard let ctx = modelContext else { return }
-            play(episode: nextEpisode, context: ctx, queueContext: queueContext)
+            play(episode: nextEpisode, context: ctx, queueContext: .show(finishedEpisode.show.persistentModelID))
             return
         }
+        // 番組に次が無いときだけ、設定「別のエピソードを自動再生する」に任せる（オフなら nil で停止）。
         if let nextEpisode = globalAutoPlayNextEpisode(after: finishedEpisode) {
             guard let ctx = modelContext else { return }
             play(episode: nextEpisode, context: ctx, queueContext: .none)
@@ -1652,36 +1767,17 @@ final class AudioPlayerService {
         return nil
     }
 
+    /// ランダム再生オフのときの「次」。今の番組の中で、ライブラリの並び（`episodeOrderOption` と昇順／降順）の隣。
+    /// 再生した経路（フォルダ・検索・復元）に関係なく同じ番組の中で進み、別の番組には飛ばない。
+    /// `publishedAt` が無いエピソードも並びの位置で決める。
     private func nextEpisodeToAutoPlay(after episode: Episode) -> Episode? {
-        guard let baseDate = episode.publishedAt else { return nil }
-
-        let candidates: [Episode]
-        switch queueContext {
-        case .none:
+        let ordered = episode.show.sortedEpisodes
+        guard let index = ordered.firstIndex(where: { $0.persistentModelID == episode.persistentModelID }) else {
             return nil
-        case .folder(let folderID):
-            guard let folder = episode.groups.first(where: { $0.persistentModelID == folderID }) else {
-                return nil
-            }
-            candidates = folder.episodes
-        case .show(let showID):
-            guard episode.show.persistentModelID == showID else { return nil }
-            candidates = episode.show.episodes
         }
-
-        return candidates
-            .filter {
-                $0.persistentModelID != episode.persistentModelID &&
-                ($0.publishedAt ?? .distantPast) > baseDate &&
-                (!AppSettings.skipPlayedEpisodes || !$0.isPlayed)
-            }
-            .sorted {
-                let lhsDate = $0.publishedAt ?? .distantPast
-                let rhsDate = $1.publishedAt ?? .distantPast
-                if lhsDate != rhsDate { return lhsDate < rhsDate }
-                return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
-            }
-            .first
+        return ordered[(index + 1)...].first {
+            !AppSettings.skipPlayedEpisodes || !$0.isPlayed
+        }
     }
 
     /// ユーザー操作以外で再生が止まったときの共通処理（自動再開しない）。
@@ -1904,7 +2000,7 @@ final class AudioPlayerService {
         nowPlayingSync.attachPlayer(newPlayer)
 
         attachPeriodicTimeObserver(generation: generation)
-        attachEndObserver(for: item)
+        attachEndObserver(for: item, generation: generation)
         attachStalledObserver(for: item)
         attachTimeControlObserver()
         attachItemStatusObserver(for: item)
@@ -1914,8 +2010,8 @@ final class AudioPlayerService {
         }
 
         if episode.playbackPosition > 0 {
-            let t = CMTime(seconds: episode.playbackPosition, preferredTimescale: 600)
-            player?.seek(to: t, toleranceBefore: .zero, toleranceAfter: .zero)
+            // seek 完了前の周期サンプル（時刻 0）で表示を上書きしないよう、同じ経路で seek する。
+            startTrackedSeek(to: episode.playbackPosition)
         }
     }
 

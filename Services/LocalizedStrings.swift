@@ -653,6 +653,16 @@ struct LocalizedStrings {
 
     // MARK: - Player
 
+    /// iPad 横の右ペインで、まだ何も再生していないとき。
+    var playerPaneEmptyTitle: String { t("再生していません", "Nothing Playing", "Chưa phát gì") }
+    var playerPaneEmptyDescription: String {
+        t(
+            "左のエピソードを選ぶと、ここに表示されます。",
+            "Choose an episode on the left and it appears here.",
+            "Chọn một tập ở bên trái để hiển thị tại đây."
+        )
+    }
+
     var saveToFolder: String { t("登録先", "Save to", "Lưu vào") }
     var noFolderSelected: String { t("フォルダ未選択", "No folder", "Chưa chọn thư mục") }
     var deleteShowConfirm: String {
